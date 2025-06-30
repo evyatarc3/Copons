@@ -210,10 +210,45 @@
 
         .stats-container {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 20px;
             padding: 30px;
             background-color: #f8f9fa;
+        }
+        
+        .stats-summary {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-around;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        
+        .summary-item {
+            text-align: center;
+        }
+        
+        .summary-item h4 {
+            color: #667eea;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        
+        .summary-item .value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .summary-item.success .value {
+            color: #2ed573;
+        }
+        
+        .summary-item.danger .value {
+            color: #ff4757;
         }
 
         .stat-card {
@@ -405,9 +440,23 @@
         </div>
 
         <div class="stats-container" style="display: none;" id="statsContainer">
-            <div class="stat-card" onclick="filterByStatus('')">
-                <h3>סה"כ סטודנטים</h3>
-                <div class="number" id="totalStudents">0</div>
+            <div class="stats-summary">
+                <div class="summary-item success">
+                    <h4>עברו</h4>
+                    <div class="value" id="passedCount">0</div>
+                </div>
+                <div class="summary-item danger">
+                    <h4>לא עברו</h4>
+                    <div class="value" id="notPassedCount">0</div>
+                </div>
+                <div class="summary-item">
+                    <h4>אחוז מעבר</h4>
+                    <div class="value" id="passedPercentage">0%</div>
+                </div>
+                <div class="summary-item">
+                    <h4>סה"כ בקורס</h4>
+                    <div class="value" id="totalInCourse">0</div>
+                </div>
             </div>
             <div class="stat-card" onclick="filterByStatus('critical')">
                 <h3>דחוף</h3>
@@ -656,9 +705,9 @@
             const required = getRequiredCoupons(year);
             const missing = required - coupons;
             
-            // Check if already has grade
-            if (grade && grade !== 'אין ציון' && grade !== '' && coupons >= required) {
-                return 'completed'; // Already got grade, no action needed
+            // Check if already passed
+            if (grade && (grade === 'עבר' || grade.includes('עבר'))) {
+                return 'completed'; // Already passed, no action needed
             }
             
             if (missing <= 0) {
@@ -747,6 +796,8 @@
         function updateStats() {
             const stats = {
                 total: students.length,
+                passed: 0,
+                notPassed: 0,
                 critical: 0,
                 near: 0,
                 progressing: 0,
@@ -755,12 +806,24 @@
 
             students.forEach(student => {
                 const status = getStatus(student.coupons, student.year, student.grade);
-                if (status !== 'completed') {
+                if (status === 'completed') {
+                    stats.passed++;
+                } else {
+                    stats.notPassed++;
                     stats[status]++;
                 }
             });
 
-            document.getElementById('totalStudents').textContent = stats.total;
+            // Update summary stats
+            document.getElementById('passedCount').textContent = stats.passed;
+            document.getElementById('notPassedCount').textContent = stats.notPassed;
+            document.getElementById('totalInCourse').textContent = stats.total;
+            
+            // Calculate percentage
+            const percentage = stats.total > 0 ? Math.round((stats.passed / stats.total) * 100) : 0;
+            document.getElementById('passedPercentage').textContent = percentage + '%';
+            
+            // Update category stats
             document.getElementById('criticalCount').textContent = stats.critical;
             document.getElementById('nearCount').textContent = stats.near;
             document.getElementById('progressingCount').textContent = stats.progressing;
@@ -816,6 +879,11 @@
 
             let filtered = students.filter(student => {
                 const status = getStatus(student.coupons, student.year, student.grade);
+                
+                // Filter out completed students from status filters
+                if (statusFilter && status === 'completed') {
+                    return false;
+                }
                 
                 // Free text search
                 const searchMatch = !searchTerm || 
