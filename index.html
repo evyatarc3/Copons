@@ -208,23 +208,14 @@
             background: linear-gradient(135deg, #ff6348 0%, #ff4757 100%);
         }
 
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            padding: 30px;
-            background-color: #f8f9fa;
-        }
-        
         .stats-summary {
-            grid-column: 1 / -1;
             display: flex;
             justify-content: space-around;
             background: white;
             padding: 20px;
+            margin: 20px;
             border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-            margin-bottom: 20px;
         }
         
         .summary-item {
@@ -249,6 +240,14 @@
         
         .summary-item.danger .value {
             color: #ff4757;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            padding: 0 30px 30px;
+            background-color: #f8f9fa;
         }
 
         .stat-card {
@@ -328,6 +327,7 @@
         .status-near { background-color: #ffa502; color: white; }
         .status-progressing { background-color: #3742fa; color: white; }
         .status-far { background-color: #747d8c; color: white; }
+        .status-completed { background-color: #2ed573; color: white; }
 
         .year-badge {
             display: inline-block;
@@ -355,6 +355,13 @@
             color: #667eea;
             font-weight: bold;
             margin-left: 10px;
+        }
+
+        .show-passed-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto;
         }
     </style>
 </head>
@@ -406,17 +413,17 @@
         <div class="controls" style="display: none;" id="controlsSection">
             <div class="search-filters">
                 <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="חיפוש חופשי - שם, ת.ז, מייל...">
+                    <input type="text" id="searchInput" placeholder="חיפוש חופשי - שם, ת.ז, מייל..." onkeyup="applyFilters()">
                     <span class="search-icon">🔍</span>
                 </div>
-                <select id="statusFilter">
+                <select id="statusFilter" onchange="applyFilters()">
                     <option value="">כל הסטטוסים</option>
                     <option value="critical">דחוף</option>
                     <option value="near">קרוב לסף</option>
                     <option value="progressing">בדרך לסף</option>
                     <option value="far">רחוק מהסף</option>
                 </select>
-                <select id="yearFilter">
+                <select id="yearFilter" onchange="applyFilters()">
                     <option value="">כל השנים</option>
                     <option value="א">שנה א'</option>
                     <option value="ב">שנה ב'</option>
@@ -424,7 +431,7 @@
                     <option value="ד">שנה ד'</option>
                     <option value="מיל">מילואים</option>
                 </select>
-                <select id="sortBy">
+                <select id="sortBy" onchange="applyFilters()">
                     <option value="name">מיון לפי שם</option>
                     <option value="coupons">מיון לפי קופונים</option>
                     <option value="status">מיון לפי סטטוס</option>
@@ -436,28 +443,33 @@
                 <button class="export-button" onclick="exportToExcel()">📊 ייצוא לאקסל</button>
                 <button class="email-button" onclick="sendEmailToSelected()">📧 שלח מייל למסומנים</button>
                 <span class="selected-count" id="selectedCount">0 מסומנים</span>
+                <div class="show-passed-toggle">
+                    <input type="checkbox" id="showPassed" onchange="applyFilters()">
+                    <label for="showPassed">הצג סטודנטים שעברו</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-summary" style="display: none;" id="statsSummary">
+            <div class="summary-item success">
+                <h4>עברו</h4>
+                <div class="value" id="passedCount">0</div>
+            </div>
+            <div class="summary-item danger">
+                <h4>לא עברו</h4>
+                <div class="value" id="notPassedCount">0</div>
+            </div>
+            <div class="summary-item">
+                <h4>אחוז מעבר</h4>
+                <div class="value" id="passedPercentage">0%</div>
+            </div>
+            <div class="summary-item">
+                <h4>סה"כ בקורס</h4>
+                <div class="value" id="totalInCourse">0</div>
             </div>
         </div>
 
         <div class="stats-container" style="display: none;" id="statsContainer">
-            <div class="stats-summary">
-                <div class="summary-item success">
-                    <h4>עברו</h4>
-                    <div class="value" id="passedCount">0</div>
-                </div>
-                <div class="summary-item danger">
-                    <h4>לא עברו</h4>
-                    <div class="value" id="notPassedCount">0</div>
-                </div>
-                <div class="summary-item">
-                    <h4>אחוז מעבר</h4>
-                    <div class="value" id="passedPercentage">0%</div>
-                </div>
-                <div class="summary-item">
-                    <h4>סה"כ בקורס</h4>
-                    <div class="value" id="totalInCourse">0</div>
-                </div>
-            </div>
             <div class="stat-card" onclick="filterByStatus('critical')">
                 <h3>דחוף</h3>
                 <div class="number" id="criticalCount">0</div>
@@ -727,7 +739,7 @@
                 case 'near': return 'קרוב לסף';
                 case 'progressing': return 'בדרך לסף';
                 case 'far': return 'רחוק מהסף';
-                case 'completed': return 'הושלם';
+                case 'completed': return 'עבר';
                 default: return 'לא ידוע';
             }
         }
@@ -786,11 +798,12 @@
             
             // Show results section
             document.getElementById('controlsSection').style.display = 'block';
+            document.getElementById('statsSummary').style.display = 'flex';
             document.getElementById('statsContainer').style.display = 'grid';
             document.getElementById('resultsSection').style.display = 'block';
             
             updateStats();
-            renderTable();
+            applyFilters();
         }
 
         function updateStats() {
@@ -876,12 +889,13 @@
             const statusFilter = document.getElementById('statusFilter').value;
             const yearFilter = document.getElementById('yearFilter').value;
             const sortBy = document.getElementById('sortBy').value;
+            const showPassed = document.getElementById('showPassed').checked;
 
             let filtered = students.filter(student => {
                 const status = getStatus(student.coupons, student.year, student.grade);
                 
-                // Filter out completed students from status filters
-                if (statusFilter && status === 'completed') {
+                // Hide completed students unless checkbox is checked
+                if (!showPassed && status === 'completed') {
                     return false;
                 }
                 
@@ -891,7 +905,7 @@
                     student.firstName.toLowerCase().includes(searchTerm) ||
                     student.lastName.toLowerCase().includes(searchTerm) ||
                     student.id.includes(searchTerm) ||
-                    student.email.toLowerCase().includes(searchTerm);
+                    (student.email && student.email.toLowerCase().includes(searchTerm));
                 
                 // Status filter
                 const statusMatch = !statusFilter || status === statusFilter;
@@ -999,13 +1013,6 @@
             const mailtoLink = `mailto:?bcc=${emails.join(',')}`;
             window.open(mailtoLink);
         }
-
-        // Add event listener for search input
-        document.getElementById('searchInput').addEventListener('keyup', function(event) {
-            if (event.key === 'Enter') {
-                applyFilters();
-            }
-        });
     </script>
 </body>
 </html>
