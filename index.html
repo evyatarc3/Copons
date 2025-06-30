@@ -287,6 +287,16 @@
             font-size: 1.1em;
             color: #999;
         }
+
+        .debug-info {
+            background-color: #f0f0f0;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -299,7 +309,8 @@
         <div class="file-upload-section">
             <div class="file-upload-grid">
                 <div class="file-upload-box">
-                    <h3>קובץ משתתפים</h3>
+                    <h3>קובץ משתתפים וציונים</h3>
+                    <p style="font-size: 12px; color: #666; margin: 10px 0;">קובץ Zins עם רשימת הסטודנטים והציונים</p>
                     <label for="participantsFile">
                         📁 בחר קובץ
                         <input type="file" id="participantsFile" accept=".xlsx,.xls,.csv">
@@ -309,6 +320,7 @@
                 
                 <div class="file-upload-box">
                     <h3>קובץ קופונים</h3>
+                    <p style="font-size: 12px; color: #666; margin: 10px 0;">קובץ עם מספר הקופונים שצבר כל סטודנט</p>
                     <label for="couponsFile">
                         🎟️ בחר קובץ
                         <input type="file" id="couponsFile" accept=".xlsx,.xls,.csv">
@@ -318,6 +330,7 @@
 
                 <div class="file-upload-box">
                     <h3>קובץ שנים</h3>
+                    <p style="font-size: 12px; color: #666; margin: 10px 0;">קובץ עם השנה הפדגוגית של כל סטודנט</p>
                     <label for="yearsFile">
                         📅 בחר קובץ
                         <input type="file" id="yearsFile" accept=".xlsx,.xls,.csv">
@@ -385,6 +398,8 @@
             </div>
         </div>
 
+        <div class="debug-info" id="debugInfo"></div>
+
         <div class="results-section" id="resultsSection">
             <div class="table-container">
                 <table id="studentsTable">
@@ -434,7 +449,20 @@
                         const data = new Uint8Array(e.target.result);
                         const workbook = XLSX.read(data, {type: 'array'});
                         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                        participants = XLSX.utils.sheet_to_json(firstSheet);
+                        const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+                        
+                        // Process Zins file - skip header rows
+                        participants = [];
+                        for (let i = 2; i < jsonData.length; i++) {
+                            const row = jsonData[i];
+                            if (row[1] && row[2]) { // Check if name and ID exist
+                                participants.push({
+                                    name: row[1].toString().trim(),
+                                    id: row[2].toString().trim(),
+                                    grade: row[5] || 'אין ציון'
+                                });
+                            }
+                        }
                         
                         filesUploaded.participants = true;
                         document.getElementById('participantsStatus').textContent = `✓ ${participants.length} משתתפים נטענו`;
@@ -443,6 +471,7 @@
                     } catch (error) {
                         document.getElementById('participantsStatus').textContent = '❌ שגיאה בקריאת הקובץ';
                         document.getElementById('participantsStatus').className = 'file-status error';
+                        console.error('Error:', error);
                     }
                 };
                 reader.readAsArrayBuffer(file);
@@ -463,22 +492,30 @@
                         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                         const couponsArray = XLSX.utils.sheet_to_json(firstSheet);
                         
-                        // Process coupons data
+                        // Process coupons data - new format
                         couponsData = {};
                         couponsArray.forEach(row => {
-                            const email = Object.values(row)[0];
-                            if (email && typeof email === 'string' && email.includes('@')) {
-                                couponsData[email.toLowerCase()] = (couponsData[email.toLowerCase()] || 0) + 1;
+                            const email = row['Email'];
+                            const loginId = row['Login ID']?.toString();
+                            const coupons = row['Credits Earned for Course'] || 0;
+                            
+                            if (email) {
+                                couponsData[email.toLowerCase()] = parseFloat(coupons);
+                            }
+                            if (loginId) {
+                                couponsData[loginId] = parseFloat(coupons);
                             }
                         });
                         
                         filesUploaded.coupons = true;
-                        document.getElementById('couponsStatus').textContent = `✓ ${Object.keys(couponsData).length} סטודנטים עם קופונים`;
+                        const uniqueStudents = new Set(Object.keys(couponsData).filter(key => key.includes('@'))).size;
+                        document.getElementById('couponsStatus').textContent = `✓ ${uniqueStudents} סטודנטים עם קופונים`;
                         document.getElementById('couponsStatus').className = 'file-status success';
                         checkAllFiles();
                     } catch (error) {
                         document.getElementById('couponsStatus').textContent = '❌ שגיאה בקריאת הקובץ';
                         document.getElementById('couponsStatus').className = 'file-status error';
+                        console.error('Error:', error);
                     }
                 };
                 reader.readAsArrayBuffer(file);
@@ -515,12 +552,14 @@
                         });
                         
                         filesUploaded.years = true;
+                        const uniqueEntries = new Set(Object.values(yearsData)).size;
                         document.getElementById('yearsStatus').textContent = `✓ ${Object.keys(yearsData).length / 2} סטודנטים עם נתוני שנה`;
                         document.getElementById('yearsStatus').className = 'file-status success';
                         checkAllFiles();
                     } catch (error) {
                         document.getElementById('yearsStatus').textContent = '❌ שגיאה בקריאת הקובץ';
                         document.getElementById('yearsStatus').className = 'file-status error';
+                        console.error('Error:', error);
                     }
                 };
                 reader.readAsArrayBuffer(file);
@@ -534,25 +573,35 @@
         }
 
         function getStudentYear(name, id) {
-            // Try to match by name first
-            let year = yearsData[name];
+            // Try to match by ID first (more reliable)
+            if (id && yearsData[id]) {
+                return yearsData[id];
+            }
             
-            // If not found, try by ID
-            if (!year && id) {
-                year = yearsData[id];
+            // Try to match by name
+            if (name && yearsData[name]) {
+                return yearsData[name];
             }
             
             // Try different name formats
-            if (!year && name) {
+            if (name) {
+                // Remove extra spaces
+                const cleanName = name.replace(/\s+/g, ' ').trim();
+                if (yearsData[cleanName]) {
+                    return yearsData[cleanName];
+                }
+                
                 // Try swapping first and last name
-                const parts = name.split(' ');
+                const parts = cleanName.split(' ');
                 if (parts.length === 2) {
                     const reversedName = `${parts[1]} ${parts[0]}`;
-                    year = yearsData[reversedName];
+                    if (yearsData[reversedName]) {
+                        return yearsData[reversedName];
+                    }
                 }
             }
             
-            return year || 'א'; // Default to year א if not found
+            return 'א'; // Default to year א if not found
         }
 
         function getRequiredCoupons(year) {
@@ -621,51 +670,64 @@
             }
         }
 
+        function findStudentEmail(participant) {
+            // Try to find email in coupons data by matching ID
+            for (const [key, value] of Object.entries(couponsData)) {
+                if (key === participant.id) {
+                    // Find the corresponding email
+                    for (const [emailKey, emailValue] of Object.entries(couponsData)) {
+                        if (emailKey.includes('@') && emailValue === value) {
+                            return emailKey;
+                        }
+                    }
+                }
+            }
+            return '';
+        }
+
         function processFiles() {
             students = [];
             
+            // Debug info
+            console.log('Processing files...');
+            console.log('Participants:', participants.length);
+            console.log('Coupons data entries:', Object.keys(couponsData).length);
+            console.log('Years data entries:', Object.keys(yearsData).length);
+            
             participants.forEach(participant => {
-                // Extract relevant fields
-                const idField = Object.keys(participant).find(key => 
-                    key.includes('ת.ז') || key.includes('תז') || key.includes('ת"ז') || key.includes('מספר זהות')
-                );
-                const nameField = Object.keys(participant).find(key => 
-                    key.includes('שם') && !key.includes('פרטי') && !key.includes('משפחה')
-                );
-                const emailField = Object.keys(participant).find(key => 
-                    key.includes('דוא"ל') || key.includes('מייל') || key.includes('email')
-                );
-                const gradeField = Object.keys(participant).find(key => 
-                    key.includes('ציון') || key.includes('grade')
-                );
-                const firstNameField = Object.keys(participant).find(key => 
-                    key.includes('שם פרטי')
-                );
-                const lastNameField = Object.keys(participant).find(key => 
-                    key.includes('שם משפחה')
-                );
+                const id = participant.id;
+                const name = participant.name;
+                const grade = participant.grade;
                 
-                if (participant[idField] && participant[nameField]) {
-                    const email = participant[emailField] || '';
-                    const id = participant[idField].toString();
-                    const name = participant[nameField];
-                    const firstName = participant[firstNameField] || name.split(' ')[0] || '';
-                    const lastName = participant[lastNameField] || name.split(' ')[1] || '';
-                    const grade = participant[gradeField];
-                    const coupons = email ? (couponsData[email.toLowerCase()] || 0) : 0;
-                    const year = getStudentYear(name, id);
-                    
-                    students.push({
-                        id: id,
-                        name: name,
-                        firstName: firstName,
-                        lastName: lastName,
-                        email: email,
-                        grade: grade || 'אין ציון',
-                        coupons: coupons,
-                        year: year
-                    });
+                // Get year
+                const year = getStudentYear(name, id);
+                
+                // Get coupons - try by ID first
+                let coupons = couponsData[id] || 0;
+                
+                // Find email
+                const email = findStudentEmail(participant);
+                
+                // If we found email and no coupons by ID, try by email
+                if (email && !coupons) {
+                    coupons = couponsData[email] || 0;
                 }
+                
+                // Extract names
+                const nameParts = name.split(' ');
+                const firstName = nameParts[1] || nameParts[0] || '';
+                const lastName = nameParts[0] || '';
+                
+                students.push({
+                    id: id,
+                    name: name,
+                    firstName: firstName,
+                    lastName: lastName,
+                    email: email,
+                    grade: grade,
+                    coupons: Math.floor(coupons), // Round down to whole number
+                    year: year
+                });
             });
             
             // Show results section
@@ -721,7 +783,7 @@
                 row.innerHTML = `
                     <td>${student.name}</td>
                     <td>${student.id}</td>
-                    <td>${student.email}</td>
+                    <td>${student.email || 'לא נמצא'}</td>
                     <td><span class="year-badge ${yearBadgeClass}">${student.year}</span></td>
                     <td>${student.coupons}</td>
                     <td>${student.grade}</td>
