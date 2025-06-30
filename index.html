@@ -137,6 +137,14 @@
             display: grid;
             grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
             gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-start;
+            align-items: center;
         }
 
         .search-box {
@@ -192,6 +200,14 @@
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
+        .export-button {
+            background: linear-gradient(135deg, #2ed573 0%, #26d162 100%);
+        }
+
+        .email-button {
+            background: linear-gradient(135deg, #ff6348 0%, #ff4757 100%);
+        }
+
         .stats-container {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -206,6 +222,13 @@
             border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.08);
             text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
         }
 
         .stat-card h3 {
@@ -253,6 +276,11 @@
             background-color: #f8f9fa;
         }
 
+        .checkbox-column {
+            width: 40px;
+            text-align: center;
+        }
+
         .status-badge {
             display: inline-block;
             padding: 6px 12px;
@@ -288,14 +316,10 @@
             color: #999;
         }
 
-        .debug-info {
-            background-color: #f0f0f0;
-            padding: 15px;
-            margin: 20px;
-            border-radius: 8px;
-            font-family: monospace;
-            font-size: 12px;
-            display: none;
+        .selected-count {
+            color: #667eea;
+            font-weight: bold;
+            margin-left: 10px;
         }
     </style>
 </head>
@@ -309,8 +333,8 @@
         <div class="file-upload-section">
             <div class="file-upload-grid">
                 <div class="file-upload-box">
-                    <h3>קובץ משתתפים וציונים</h3>
-                    <p style="font-size: 12px; color: #666; margin: 10px 0;">קובץ Zins עם רשימת הסטודנטים והציונים</p>
+                    <h3>קובץ משתתפים בקורס</h3>
+                    <p style="font-size: 12px; color: #666; margin: 10px 0;">קובץ Zins עם רשימת המשתתפים בקורס בלבד</p>
                     <label for="participantsFile">
                         📁 בחר קובץ
                         <input type="file" id="participantsFile" accept=".xlsx,.xls,.csv">
@@ -320,7 +344,7 @@
                 
                 <div class="file-upload-box">
                     <h3>קובץ קופונים</h3>
-                    <p style="font-size: 12px; color: #666; margin: 10px 0;">קובץ עם מספר הקופונים שצבר כל סטודנט</p>
+                    <p style="font-size: 12px; color: #666; margin: 10px 0;">קובץ עם כל הסטודנטים ומספר הקופונים</p>
                     <label for="couponsFile">
                         🎟️ בחר קובץ
                         <input type="file" id="couponsFile" accept=".xlsx,.xls,.csv">
@@ -373,43 +397,51 @@
                 </select>
                 <button onclick="applyFilters()">🔍 סנן וחפש</button>
             </div>
+            <div class="action-buttons">
+                <button class="export-button" onclick="exportToExcel()">📊 ייצוא לאקסל</button>
+                <button class="email-button" onclick="sendEmailToSelected()">📧 שלח מייל למסומנים</button>
+                <span class="selected-count" id="selectedCount">0 מסומנים</span>
+            </div>
         </div>
 
         <div class="stats-container" style="display: none;" id="statsContainer">
-            <div class="stat-card">
+            <div class="stat-card" onclick="filterByStatus('')">
                 <h3>סה"כ סטודנטים</h3>
                 <div class="number" id="totalStudents">0</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" onclick="filterByStatus('critical')">
                 <h3>דחוף</h3>
                 <div class="number" id="criticalCount">0</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" onclick="filterByStatus('near')">
                 <h3>קרוב לסף</h3>
                 <div class="number" id="nearCount">0</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" onclick="filterByStatus('progressing')">
                 <h3>בדרך לסף</h3>
                 <div class="number" id="progressingCount">0</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" onclick="filterByStatus('far')">
                 <h3>רחוק מהסף</h3>
                 <div class="number" id="farCount">0</div>
             </div>
         </div>
-
-        <div class="debug-info" id="debugInfo"></div>
 
         <div class="results-section" id="resultsSection">
             <div class="table-container">
                 <table id="studentsTable">
                     <thead>
                         <tr>
+                            <th class="checkbox-column">
+                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                            </th>
                             <th>שם מלא</th>
                             <th>ת.ז</th>
                             <th>מייל</th>
                             <th>שנה</th>
                             <th>קופונים</th>
+                            <th>נדרש</th>
+                            <th>חסר</th>
                             <th>ציון</th>
                             <th>סטטוס</th>
                         </tr>
@@ -426,10 +458,11 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
-        let participants = [];
-        let couponsData = {};
+        let allCouponsData = {}; // All students with coupons
+        let courseParticipants = []; // Only course participants
         let yearsData = {};
-        let students = [];
+        let students = []; // Final merged data
+        let currentFilteredStudents = [];
         let filesUploaded = {
             participants: false,
             coupons: false,
@@ -449,23 +482,27 @@
                         const data = new Uint8Array(e.target.result);
                         const workbook = XLSX.read(data, {type: 'array'});
                         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                        const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+                        const rawData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
                         
-                        // Process Zins file - skip header rows
-                        participants = [];
-                        for (let i = 2; i < jsonData.length; i++) {
-                            const row = jsonData[i];
-                            if (row[1] && row[2]) { // Check if name and ID exist
-                                participants.push({
-                                    name: row[1].toString().trim(),
-                                    id: row[2].toString().trim(),
-                                    grade: row[5] || 'אין ציון'
+                        // Process participants - data starts from row 4 (index 3)
+                        courseParticipants = [];
+                        for (let i = 3; i < rawData.length; i++) {
+                            const row = rawData[i];
+                            if (row[0] && row[1]) { // Name and ID exist
+                                const name = row[0].toString().trim();
+                                const id = row[1].toString().trim();
+                                const grade = row[8] || row[4] || 'אין ציון'; // Try different columns for grade
+                                
+                                courseParticipants.push({
+                                    name: name,
+                                    id: id,
+                                    grade: grade
                                 });
                             }
                         }
                         
                         filesUploaded.participants = true;
-                        document.getElementById('participantsStatus').textContent = `✓ ${participants.length} משתתפים נטענו`;
+                        document.getElementById('participantsStatus').textContent = `✓ ${courseParticipants.length} משתתפים בקורס`;
                         document.getElementById('participantsStatus').className = 'file-status success';
                         checkAllFiles();
                     } catch (error) {
@@ -492,24 +529,37 @@
                         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                         const couponsArray = XLSX.utils.sheet_to_json(firstSheet);
                         
-                        // Process coupons data - new format
-                        couponsData = {};
+                        // Process all coupons data
+                        allCouponsData = {};
                         couponsArray.forEach(row => {
-                            const email = row['Email'];
-                            const loginId = row['Login ID']?.toString();
-                            const coupons = row['Credits Earned for Course'] || 0;
+                            const firstName = row['First Name'] || '';
+                            const lastName = row['Last Name'] || '';
+                            const fullName = `${lastName} ${firstName}`.trim();
+                            const email = row['Email'] || '';
+                            const loginId = row['Login ID']?.toString() || '';
+                            const coupons = parseFloat(row['Credits Earned for Course']) || 0;
                             
-                            if (email) {
-                                couponsData[email.toLowerCase()] = parseFloat(coupons);
-                            }
+                            // Store by ID
                             if (loginId) {
-                                couponsData[loginId] = parseFloat(coupons);
+                                allCouponsData[loginId] = {
+                                    name: fullName,
+                                    email: email,
+                                    coupons: Math.floor(coupons)
+                                };
+                            }
+                            
+                            // Also store by name for backup matching
+                            if (fullName) {
+                                allCouponsData[fullName] = {
+                                    name: fullName,
+                                    email: email,
+                                    coupons: Math.floor(coupons)
+                                };
                             }
                         });
                         
                         filesUploaded.coupons = true;
-                        const uniqueStudents = new Set(Object.keys(couponsData).filter(key => key.includes('@'))).size;
-                        document.getElementById('couponsStatus').textContent = `✓ ${uniqueStudents} סטודנטים עם קופונים`;
+                        document.getElementById('couponsStatus').textContent = `✓ ${couponsArray.length} רשומות קופונים`;
                         document.getElementById('couponsStatus').className = 'file-status success';
                         checkAllFiles();
                     } catch (error) {
@@ -552,7 +602,6 @@
                         });
                         
                         filesUploaded.years = true;
-                        const uniqueEntries = new Set(Object.values(yearsData)).size;
                         document.getElementById('yearsStatus').textContent = `✓ ${Object.keys(yearsData).length / 2} סטודנטים עם נתוני שנה`;
                         document.getElementById('yearsStatus').className = 'file-status success';
                         checkAllFiles();
@@ -583,24 +632,6 @@
                 return yearsData[name];
             }
             
-            // Try different name formats
-            if (name) {
-                // Remove extra spaces
-                const cleanName = name.replace(/\s+/g, ' ').trim();
-                if (yearsData[cleanName]) {
-                    return yearsData[cleanName];
-                }
-                
-                // Try swapping first and last name
-                const parts = cleanName.split(' ');
-                if (parts.length === 2) {
-                    const reversedName = `${parts[1]} ${parts[0]}`;
-                    if (yearsData[reversedName]) {
-                        return yearsData[reversedName];
-                    }
-                }
-            }
-            
             return 'א'; // Default to year א if not found
         }
 
@@ -621,27 +652,23 @@
             }
         }
 
-        function getStatus(coupons, year) {
+        function getStatus(coupons, year, grade) {
             const required = getRequiredCoupons(year);
+            const missing = required - coupons;
             
-            if (year.includes('*מיל*')) {
-                // מילואים thresholds
-                if (coupons >= 18) return 'critical';
-                if (coupons >= 12) return 'near';
-                if (coupons >= 10) return 'progressing';
-                return 'far';
-            } else if (required === 30) {
-                // שנה א thresholds
-                if (coupons >= 30) return 'critical';
-                if (coupons >= 24) return 'near';
-                if (coupons >= 18) return 'progressing';
-                return 'far';
+            // Check if already has grade
+            if (grade && grade !== 'אין ציון' && grade !== '' && coupons >= required) {
+                return 'completed'; // Already got grade, no action needed
+            }
+            
+            if (missing <= 0) {
+                return 'critical'; // דחוף - reached requirement but no grade yet
+            } else if (missing <= 5) {
+                return 'near'; // קרוב לסף
+            } else if (missing <= 10) {
+                return 'progressing'; // בדרך לסף
             } else {
-                // שנה ב, ג, ד thresholds
-                if (coupons >= 24) return 'critical';
-                if (coupons >= 18) return 'near';
-                if (coupons >= 12) return 'progressing';
-                return 'far';
+                return 'far'; // רחוק מהסף
             }
         }
 
@@ -651,6 +678,7 @@
                 case 'near': return 'קרוב לסף';
                 case 'progressing': return 'בדרך לסף';
                 case 'far': return 'רחוק מהסף';
+                case 'completed': return 'הושלם';
                 default: return 'לא ידוע';
             }
         }
@@ -670,63 +698,40 @@
             }
         }
 
-        function findStudentEmail(participant) {
-            // Try to find email in coupons data by matching ID
-            for (const [key, value] of Object.entries(couponsData)) {
-                if (key === participant.id) {
-                    // Find the corresponding email
-                    for (const [emailKey, emailValue] of Object.entries(couponsData)) {
-                        if (emailKey.includes('@') && emailValue === value) {
-                            return emailKey;
-                        }
-                    }
-                }
-            }
-            return '';
-        }
-
         function processFiles() {
             students = [];
             
-            // Debug info
-            console.log('Processing files...');
-            console.log('Participants:', participants.length);
-            console.log('Coupons data entries:', Object.keys(couponsData).length);
-            console.log('Years data entries:', Object.keys(yearsData).length);
-            
-            participants.forEach(participant => {
+            // Process only course participants
+            courseParticipants.forEach(participant => {
                 const id = participant.id;
                 const name = participant.name;
                 const grade = participant.grade;
                 
+                // Get coupons data
+                let couponsInfo = allCouponsData[id] || allCouponsData[name] || { coupons: 0, email: '' };
+                
                 // Get year
                 const year = getStudentYear(name, id);
-                
-                // Get coupons - try by ID first
-                let coupons = couponsData[id] || 0;
-                
-                // Find email
-                const email = findStudentEmail(participant);
-                
-                // If we found email and no coupons by ID, try by email
-                if (email && !coupons) {
-                    coupons = couponsData[email] || 0;
-                }
                 
                 // Extract names
                 const nameParts = name.split(' ');
                 const firstName = nameParts[1] || nameParts[0] || '';
                 const lastName = nameParts[0] || '';
                 
+                const required = getRequiredCoupons(year);
+                const missing = Math.max(0, required - couponsInfo.coupons);
+                
                 students.push({
                     id: id,
                     name: name,
                     firstName: firstName,
                     lastName: lastName,
-                    email: email,
+                    email: couponsInfo.email,
                     grade: grade,
-                    coupons: Math.floor(coupons), // Round down to whole number
-                    year: year
+                    coupons: couponsInfo.coupons,
+                    year: year,
+                    required: required,
+                    missing: missing
                 });
             });
             
@@ -749,8 +754,10 @@
             };
 
             students.forEach(student => {
-                const status = getStatus(student.coupons, student.year);
-                stats[status]++;
+                const status = getStatus(student.coupons, student.year, student.grade);
+                if (status !== 'completed') {
+                    stats[status]++;
+                }
             });
 
             document.getElementById('totalStudents').textContent = stats.total;
@@ -763,6 +770,7 @@
         function renderTable(filteredStudents = null) {
             const tbody = document.getElementById('studentsTableBody');
             const studentsToRender = filteredStudents || students;
+            currentFilteredStudents = studentsToRender;
             
             tbody.innerHTML = '';
 
@@ -775,22 +783,29 @@
             document.getElementById('studentsTable').style.display = 'table';
             document.getElementById('noResults').style.display = 'none';
 
-            studentsToRender.forEach(student => {
-                const status = getStatus(student.coupons, student.year);
+            studentsToRender.forEach((student, index) => {
+                const status = getStatus(student.coupons, student.year, student.grade);
                 const yearBadgeClass = getYearBadgeClass(student.year);
                 
                 const row = document.createElement('tr');
                 row.innerHTML = `
+                    <td class="checkbox-column">
+                        <input type="checkbox" class="student-checkbox" data-index="${index}" onchange="updateSelectedCount()">
+                    </td>
                     <td>${student.name}</td>
                     <td>${student.id}</td>
                     <td>${student.email || 'לא נמצא'}</td>
                     <td><span class="year-badge ${yearBadgeClass}">${student.year}</span></td>
                     <td>${student.coupons}</td>
+                    <td>${student.required}</td>
+                    <td>${student.missing}</td>
                     <td>${student.grade}</td>
                     <td><span class="status-badge status-${status}">${getStatusText(status)}</span></td>
                 `;
                 tbody.appendChild(row);
             });
+            
+            updateSelectedCount();
         }
 
         function applyFilters() {
@@ -800,7 +815,7 @@
             const sortBy = document.getElementById('sortBy').value;
 
             let filtered = students.filter(student => {
-                const status = getStatus(student.coupons, student.year);
+                const status = getStatus(student.coupons, student.year, student.grade);
                 
                 // Free text search
                 const searchMatch = !searchTerm || 
@@ -834,9 +849,9 @@
                     case 'coupons':
                         return b.coupons - a.coupons;
                     case 'status':
-                        const statusOrder = { 'critical': 0, 'near': 1, 'progressing': 2, 'far': 3 };
-                        const statusA = getStatus(a.coupons, a.year);
-                        const statusB = getStatus(b.coupons, b.year);
+                        const statusOrder = { 'critical': 0, 'near': 1, 'progressing': 2, 'far': 3, 'completed': 4 };
+                        const statusA = getStatus(a.coupons, a.year, a.grade);
+                        const statusB = getStatus(b.coupons, b.year, b.grade);
                         return statusOrder[statusA] - statusOrder[statusB];
                     case 'year':
                         return a.year.localeCompare(b.year);
@@ -846,6 +861,75 @@
             });
 
             renderTable(filtered);
+        }
+
+        function filterByStatus(status) {
+            document.getElementById('statusFilter').value = status;
+            applyFilters();
+        }
+
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll').checked;
+            const checkboxes = document.querySelectorAll('.student-checkbox');
+            checkboxes.forEach(cb => cb.checked = selectAll);
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const selected = document.querySelectorAll('.student-checkbox:checked').length;
+            document.getElementById('selectedCount').textContent = `${selected} מסומנים`;
+        }
+
+        function exportToExcel() {
+            if (currentFilteredStudents.length === 0) {
+                alert('אין נתונים לייצוא');
+                return;
+            }
+            
+            // Prepare data for export
+            const exportData = currentFilteredStudents.map(student => ({
+                'שם': student.name,
+                'ת.ז': student.id,
+                'מייל': student.email,
+                'שנה': student.year,
+                'קופונים': student.coupons,
+                'נדרש': student.required,
+                'חסר': student.missing,
+                'ציון': student.grade,
+                'סטטוס': getStatusText(getStatus(student.coupons, student.year, student.grade))
+            }));
+            
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Students');
+            
+            // Generate filename with date
+            const date = new Date().toLocaleDateString('he-IL').replace(/\//g, '-');
+            const filename = `דוח_קופונים_${date}.xlsx`;
+            
+            XLSX.writeFile(workbook, filename);
+        }
+
+        function sendEmailToSelected() {
+            const checkboxes = document.querySelectorAll('.student-checkbox:checked');
+            const emails = [];
+            
+            checkboxes.forEach(cb => {
+                const index = cb.getAttribute('data-index');
+                const student = currentFilteredStudents[index];
+                if (student.email) {
+                    emails.push(student.email);
+                }
+            });
+            
+            if (emails.length === 0) {
+                alert('לא נבחרו סטודנטים עם כתובות מייל');
+                return;
+            }
+            
+            // Open default email client with all selected emails
+            const mailtoLink = `mailto:?bcc=${emails.join(',')}`;
+            window.open(mailtoLink);
         }
 
         // Add event listener for search input
