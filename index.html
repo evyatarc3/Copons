@@ -1,14 +1,4 @@
-            <div class="stat-card" onclick="filterByStatus('critical')">
-                <h3>דחוף</h3>
-                <p style="font-size: 0.8em; color: #999; margin: 5px 0;">הגיעו לדרישה</p>
-                <div class="number" id="criticalCount">0</div>
-            </div>
-            <div class="stat-card" onclick="filterByStatus('near')">
-                <h3>קרוב לסף</h3>
-                <p style="font-size: 0.8em; color: #999; margin: 5px 0;">חסרים 1-5</p>
-                <div class="number" id="nearCount">0</div>
-            </div>
-            <div class="stat-card" onclick="filterByStatus('progressing')<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -482,19 +472,23 @@
         <div class="stats-container" style="display: none;" id="statsContainer">
             <div class="stat-card" onclick="filterByStatus('critical')">
                 <h3>דחוף</h3>
-                <div class="number" id="criticalCount">0</div>
+                <p style="font-size: 0.8em; color: #999; margin: 5px 0;">הגיעו לדרישה</p>
+                <div class="number critical-count">0</div>
             </div>
             <div class="stat-card" onclick="filterByStatus('near')">
                 <h3>קרוב לסף</h3>
-                <div class="number" id="nearCount">0</div>
+                <p style="font-size: 0.8em; color: #999; margin: 5px 0;">חסרים 1-5</p>
+                <div class="number near-count">0</div>
             </div>
             <div class="stat-card" onclick="filterByStatus('progressing')">
                 <h3>בדרך לסף</h3>
-                <div class="number" id="progressingCount">0</div>
+                <p style="font-size: 0.8em; color: #999; margin: 5px 0;">חסרים 6-10</p>
+                <div class="number progressing-count">0</div>
             </div>
             <div class="stat-card" onclick="filterByStatus('far')">
                 <h3>רחוק מהסף</h3>
-                <div class="number" id="farCount">0</div>
+                <p style="font-size: 0.8em; color: #999; margin: 5px 0;">חסרים 11+</p>
+                <div class="number far-count">0</div>
             </div>
         </div>
 
@@ -846,11 +840,11 @@
             const percentage = stats.total > 0 ? Math.round((stats.passed / stats.total) * 100) : 0;
             document.getElementById('passedPercentage').textContent = percentage + '%';
             
-            // Update category stats
-            document.getElementById('criticalCount').textContent = stats.critical;
-            document.getElementById('nearCount').textContent = stats.near;
-            document.getElementById('progressingCount').textContent = stats.progressing;
-            document.getElementById('farCount').textContent = stats.far;
+            // Update all category stats (using class instead of ID to update multiple elements)
+            document.querySelectorAll('.critical-count').forEach(el => el.textContent = stats.critical);
+            document.querySelectorAll('.near-count').forEach(el => el.textContent = stats.near);
+            document.querySelectorAll('.progressing-count').forEach(el => el.textContent = stats.progressing);
+            document.querySelectorAll('.far-count').forEach(el => el.textContent = stats.far);
         }
 
         function renderTable(filteredStudents = null) {
