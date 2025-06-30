@@ -1,4 +1,14 @@
-<!DOCTYPE html>
+            <div class="stat-card" onclick="filterByStatus('critical')">
+                <h3>דחוף</h3>
+                <p style="font-size: 0.8em; color: #999; margin: 5px 0;">הגיעו לדרישה</p>
+                <div class="number" id="criticalCount">0</div>
+            </div>
+            <div class="stat-card" onclick="filterByStatus('near')">
+                <h3>קרוב לסף</h3>
+                <p style="font-size: 0.8em; color: #999; margin: 5px 0;">חסרים 1-5</p>
+                <div class="number" id="nearCount">0</div>
+            </div>
+            <div class="stat-card" onclick="filterByStatus('progressing')<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -418,10 +428,10 @@
                 </div>
                 <select id="statusFilter" onchange="applyFilters()">
                     <option value="">כל הסטטוסים</option>
-                    <option value="critical">דחוף</option>
-                    <option value="near">קרוב לסף</option>
-                    <option value="progressing">בדרך לסף</option>
-                    <option value="far">רחוק מהסף</option>
+                    <option value="critical">דחוף (הגיעו לדרישה)</option>
+                    <option value="near">קרוב לסף (חסרים 1-5)</option>
+                    <option value="progressing">בדרך לסף (חסרים 6-10)</option>
+                    <option value="far">רחוק מהסף (חסרים 11+)</option>
                 </select>
                 <select id="yearFilter" onchange="applyFilters()">
                     <option value="">כל השנים</option>
@@ -722,14 +732,14 @@
                 return 'completed'; // Already passed, no action needed
             }
             
-            if (missing <= 0) {
+            if (coupons >= required) {
                 return 'critical'; // דחוף - reached requirement but no grade yet
             } else if (missing <= 5) {
-                return 'near'; // קרוב לסף
+                return 'near'; // קרוב לסף - 5 or less below requirement
             } else if (missing <= 10) {
-                return 'progressing'; // בדרך לסף
+                return 'progressing'; // בדרך לסף - 6-10 below requirement
             } else {
-                return 'far'; // רחוק מהסף
+                return 'far'; // רחוק מהסף - more than 10 below requirement
             }
         }
 
@@ -894,18 +904,24 @@
             let filtered = students.filter(student => {
                 const status = getStatus(student.coupons, student.year, student.grade);
                 
-                // Hide completed students unless checkbox is checked
-                if (!showPassed && status === 'completed') {
-                    return false;
-                }
-                
-                // Free text search
+                // Free text search - always search all students including passed ones
                 const searchMatch = !searchTerm || 
                     student.name.toLowerCase().includes(searchTerm) ||
                     student.firstName.toLowerCase().includes(searchTerm) ||
                     student.lastName.toLowerCase().includes(searchTerm) ||
                     student.id.includes(searchTerm) ||
                     (student.email && student.email.toLowerCase().includes(searchTerm));
+                
+                // If there's a search term, show matching results regardless of other filters
+                if (searchTerm && searchMatch) {
+                    return true;
+                }
+                
+                // Apply other filters only if no search term
+                // Hide completed students unless checkbox is checked
+                if (!showPassed && status === 'completed') {
+                    return false;
+                }
                 
                 // Status filter
                 const statusMatch = !statusFilter || status === statusFilter;
