@@ -1,2224 +1,797 @@
 <!DOCTYPE html>
-<html dir="rtl" lang="he">
+<html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מערכת ניהול סטודנטים וקופונים</title>
+    <title>מערכת ניהול קופונים</title>
     <style>
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 10px;
-            line-height: 1.6;
+            padding: 20px;
+            color: #333;
         }
 
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
+            background-color: white;
             border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             overflow: hidden;
         }
 
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 20px;
+            padding: 30px;
             text-align: center;
         }
 
         .header h1 {
-            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-size: 2.5em;
             margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
 
-        .header p {
-            font-size: clamp(0.9rem, 2vw, 1.1rem);
-            opacity: 0.9;
+        .file-upload-section {
+            padding: 30px;
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
         }
 
-        .dashboard {
-            padding: 15px;
-        }
-
-        .stats-grid {
+        .file-upload-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 25px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
         }
 
-        .stat-card {
+        .file-upload-box {
+            background: white;
             padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            color: white;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-        }
-
-        .stat-card.urgent {
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-            animation: pulse 2s infinite;
-        }
-
-        .stat-card.warning {
-            background: linear-gradient(135deg, #fd7e14 0%, #e55a00 100%);
-        }
-
-        .stat-card.success {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-        }
-
-        .stat-card.info {
-            background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%);
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
-
-        .stat-number {
-            font-size: clamp(1.8rem, 5vw, 2.5rem);
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            font-size: clamp(0.8rem, 2vw, 1rem);
-            opacity: 0.9;
-        }
-
-        .upload-section {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 25px;
+            border-radius: 10px;
             border: 2px dashed #667eea;
             text-align: center;
             transition: all 0.3s ease;
         }
 
-        .upload-section:hover {
+        .file-upload-box:hover {
             border-color: #764ba2;
-            background: #f0f2ff;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
-        .search-section {
-            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px 0;
-            border: 2px solid #2196f3;
-            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.2);
+        .file-upload-box h3 {
+            color: #667eea;
+            margin-bottom: 10px;
         }
 
-        .search-section h3 {
-            color: #1976d2;
-            margin-bottom: 15px;
-            text-align: center;
-            font-size: 1.2rem;
-        }
-
-        .search-input-container {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .search-input {
-            flex: 1;
-            min-width: 300px;
-            padding: 12px 20px;
-            border: 2px solid #ddd;
-            border-radius: 25px;
-            font-size: 16px;
-            text-align: right;
-            transition: all 0.3s ease;
-        }
-
-        .search-input:focus {
-            outline: none;
-            border-color: #2196f3;
-            box-shadow: 0 0 15px rgba(33, 150, 243, 0.3);
-            transform: scale(1.02);
-        }
-
-        .search-results {
-            font-weight: bold;
-            min-width: 150px;
-            text-align: center;
-            padding: 8px 15px;
-            border-radius: 20px;
-            background: rgba(255, 255, 255, 0.8);
-        }
-
-        .file-input {
+        .file-upload-box input[type="file"] {
             display: none;
         }
 
-        .file-label {
+        .file-upload-box label {
+            display: inline-block;
+            padding: 10px 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 12px 25px;
-            border-radius: 25px;
+            border-radius: 8px;
             cursor: pointer;
-            display: inline-block;
-            font-size: clamp(0.9rem, 2vw, 1.1rem);
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-            margin: 5px;
+            transition: transform 0.2s;
         }
 
-        .file-label:hover {
+        .file-upload-box label:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
         }
 
-        .btn {
+        .file-status {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .file-status.success {
+            color: #2ed573;
+        }
+
+        .file-status.error {
+            color: #ff6348;
+        }
+
+        .process-button {
+            display: block;
+            margin: 0 auto;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #2ed573 0%, #26d162 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .process-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(46, 213, 115, 0.4);
+        }
+
+        .process-button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .controls {
+            padding: 20px 30px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .search-filters {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+            gap: 15px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 45px 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .search-box .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+        }
+
+        select, button {
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        select:focus, button:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: clamp(0.8rem, 2vw, 1rem);
-            margin: 5px;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-save {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
             font-weight: bold;
-            font-size: 1.1rem;
         }
 
-        .btn-download {
-            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .btn-urgent {
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 20px;
+            padding: 30px;
+            background-color: #f8f9fa;
         }
 
-        .btn-warning {
-            background: linear-gradient(135deg, #fd7e14 0%, #e55a00 100%);
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            color: #667eea;
+            font-size: 1em;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .results-section {
+            padding: 30px;
+            display: none;
         }
 
         .table-container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-            overflow: hidden;
-            margin-top: 20px;
             overflow-x: auto;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 1000px;
+            background-color: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
         }
 
         th {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 15px 10px;
-            text-align: center;
-            font-weight: 600;
-            font-size: clamp(0.8rem, 2vw, 1rem);
+            padding: 15px;
+            text-align: right;
+            font-weight: bold;
         }
 
         td {
-            padding: 12px 10px;
-            border-bottom: 1px solid #eee;
-            text-align: center;
-            font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
         }
 
         tr:hover {
-            background: #f8f9fa;
+            background-color: #f8f9fa;
         }
 
-        .status-passed {
-            background: #d4edda;
-            color: #155724;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 0.8rem;
-        }
-
-        .status-pending {
-            background: #fff3cd;
-            color: #856404;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .status-pending:hover {
-            background: #ffc107;
-            color: #212529;
-            transform: scale(1.05);
-        }
-
-        .status-handled {
-            background: #d4edda;
-            color: #155724;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .status-handled:hover {
-            background: #c3e6cb;
-            transform: scale(1.05);
-        }
-
-        .credits-urgent {
-            background: #dc3545;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-weight: bold;
-            animation: pulse 2s infinite;
-            font-size: 0.8rem;
-        }
-
-        .credits-high {
-            background: #fd7e14;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-weight: bold;
-            font-size: 0.8rem;
-        }
-
-        .credits-medium {
-            background: #ffc107;
-            color: #212529;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-weight: bold;
-            font-size: 0.8rem;
-        }
-
-        .credits-low {
-            background: #6c757d;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-weight: bold;
-            font-size: 0.8rem;
-        }
-
-        .alert {
-            padding: 15px 20px;
-            border-radius: 10px;
-            margin: 15px 0;
-            font-weight: 500;
-            font-size: clamp(0.8rem, 2vw, 1rem);
-        }
-
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .alert-warning {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
-        }
-
-        .alert-info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-
-        .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: #e9ecef;
-            border-radius: 4px;
-            overflow: hidden;
-            margin: 15px 0;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
-            border-radius: 4px;
-            transition: width 0.3s ease;
-        }
-
-        .button-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            margin: 20px 0;
-        }
-
-        .instruction-box {
-            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 25px;
-            border: 2px solid #667eea;
-        }
-
-        .loading {
+        .status-badge {
             display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-left: 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .summary-card {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 15px;
-            padding: 20px;
-            margin: 15px 0;
-            border-left: 5px solid #667eea;
-        }
-
-        .email-clickable {
-            color: #007bff;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .email-clickable:hover {
-            text-decoration: underline;
-        }
-
-        .bulk-actions {
-            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px 0;
-            display: none;
-            border: 2px solid #2196f3;
-            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.2);
-        }
-
-        .bulk-actions.show {
-            display: block;
-        }
-
-        .bulk-actions h4 {
-            color: #1976d2;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        .bulk-actions-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .checkbox-student {
-            margin-left: 10px;
-            transform: scale(1.2);
-        }
-
-        .export-mini-btn {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 15px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            margin: 5px;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 5px rgba(40, 167, 69, 0.3);
-        }
-
-        .export-mini-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4);
-        }
-
-        .row-handled {
-            background-color: #f8fff9 !important;
-            border-left: 4px solid #20c997;
-        }
-
-        .row-selected {
-            background-color: #e3f2fd !important;
-            border-left: 4px solid #2196f3;
-        }
-
-        .library-status {
-            background: #e3f2fd;
-            color: #1976d2;
-            padding: 10px;
-            border-radius: 10px;
-            margin: 10px 0;
-            text-align: center;
-            font-size: 0.9rem;
-        }
-
-        .highlight {
-            background: #ffeb3b;
-            padding: 1px 3px;
-            border-radius: 3px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
             font-weight: bold;
         }
 
-        .save-indicator {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #28a745;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 25px;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s ease;
+        .status-critical { background-color: #ff4757; color: white; }
+        .status-near { background-color: #ffa502; color: white; }
+        .status-progressing { background-color: #3742fa; color: white; }
+        .status-far { background-color: #747d8c; color: white; }
+
+        .year-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 13px;
+            font-weight: bold;
+            margin-right: 5px;
         }
 
-        .save-indicator.show {
-            opacity: 1;
-        }
+        .year-a { background-color: #e8f5e9; color: #2e7d32; }
+        .year-b { background-color: #e3f2fd; color: #1565c0; }
+        .year-c { background-color: #f3e5f5; color: #7b1fa2; }
+        .year-d { background-color: #fff3e0; color: #e65100; }
+        .year-mil { background-color: #ffebee; color: #c62828; }
 
-        .unsaved-changes {
-            background: #fff3cd;
-            color: #856404;
-            padding: 10px 20px;
-            border-radius: 10px;
-            margin: 10px 0;
-            border: 1px solid #ffeaa7;
+        .no-results {
             text-align: center;
-        }
-
-        @media (max-width: 768px) {
-            .dashboard {
-                padding: 10px;
-            }
-            
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 10px;
-            }
-            
-            .stat-card {
-                padding: 15px;
-            }
-            
-            .button-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .bulk-actions-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            th, td {
-                padding: 8px 5px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .header {
-                padding: 15px;
-            }
+            padding: 50px;
+            font-size: 1.1em;
+            color: #999;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎓 מערכת ניהול סטודנטים וקופונים</h1>
-            <p>ניהול חכם ומקצועי של ציונים וקופונים עם חיפוש ופעולות מתקדמות</p>
+            <h1>מערכת ניהול קופונים</h1>
+            <p>העלה את הקבצים הנדרשים לעיבוד הנתונים</p>
         </div>
 
-        <div class="dashboard">
-            <!-- אינדיקטור שמירה -->
-            <div class="save-indicator" id="saveIndicator">
-                ✅ השינויים נשמרו בהצלחה!
-            </div>
-
-            <!-- סטטוס ספריות -->
-            <div class="library-status" id="libraryStatus">
-                📚 טוען ספריות... אנא המתן
-            </div>
-
-            <!-- סטטיסטיקות -->
-            <div class="stats-grid" id="statsGrid">
-                <div class="stat-card info">
-                    <div class="stat-number" id="totalStudents">-</div>
-                    <div class="stat-label">סה"כ סטודנטים</div>
-                </div>
-                <div class="stat-card success">
-                    <div class="stat-number" id="passedStudents">-</div>
-                    <div class="stat-label">עברו</div>
-                </div>
-                <div class="stat-card urgent">
-                    <div class="stat-number" id="urgentGrading">-</div>
-                    <div class="stat-label">דחוף (30+ קופונים)</div>
-                </div>
-                <div class="stat-card warning">
-                    <div class="stat-number" id="nearThreshold">-</div>
-                    <div class="stat-label">קרובים לסף (24-29)</div>
-                </div>
-                <div class="stat-card" style="background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);">
-                    <div class="stat-number" id="farFromThreshold">-</div>
-                    <div class="stat-label">רחוקים מהסף (<15)</div>
-                </div>
-                <div class="stat-card" style="background: linear-gradient(135deg, #20c997 0%, #17a085 100%);">
-                    <div class="stat-number" id="handledStudents">-</div>
-                    <div class="stat-label">טופלו</div>
-                </div>
-            </div>
-
-            <!-- הוראות שימוש -->
-            <div class="instruction-box">
-                <h3 style="color: #667eea; margin-bottom: 15px;">🔧 הוראות שימוש</h3>
-                <div style="text-align: right;">
-                    <strong>שלב 1:</strong> העלה קובץ רשימת סטודנטים בקורס (קובץ מודל)<br>
-                    <strong>שלב 2:</strong> העלה קובץ קופונים נוכחי<br>
-                    <strong>שלב 3:</strong> חפש סטודנטים ספציפיים או הצג קטגוריות<br>
-                    <strong>שלב 4:</strong> סמן סטודנטים כ"טופל" ושמור את השינויים<br><br>
-                    
-                    <div style="background: #d1ecf1; padding: 15px; border-radius: 10px; margin: 10px 0;">
-                        <strong>🔍 חיפוש מתקדם:</strong><br>
-                        • <strong>חיפוש מיידי</strong> - חפש לפי שם פרטי, שם משפחה או תעודת זהות<br>
-                        • <strong>חיפוש חלקי</strong> - הקלד חלק מהשם או מספרי ת.ז<br>
-                        • <strong>הדגשת תוצאות</strong> - המונח המחופש מודגש בצהוב<br>
-                        • <strong>קיצורי דרך</strong> - Ctrl+F או F3 לפתיחת החיפוש, Escape לניקוי<br><br>
-                        
-                        <strong>✅ פעולות על סטודנטים:</strong><br>
-                        • <strong>סימון כטופל</strong> - לחץ על "ממתין" או סמן ולחץ "סמן כטופלו"<br>
-                        • <strong>שינוי חזרה</strong> - לחץ על "טופל" כדי להחזיר לממתין<br>
-                        • <strong>פעולות קבוצתיות</strong> - סמן כמה סטודנטים ובצע פעולות<br>
-                        • <strong>שמירה</strong> - לחץ "שמור שינויים" כדי לעדכן את הסטטיסטיקות<br><br>
-                        
-                        <strong>📤 ייצוא ודוחות:</strong><br>
-                        • <strong>ייצוא מסומנים</strong> - ייצא רק סטודנטים שנבחרו<br>
-                        • <strong>ייצוא קטגוריה</strong> - ייצא קטגוריה שלמה לאקסל<br>
-                        • <strong>דוח מפורט</strong> - ייצוא כל הנתונים עם כל הגיליונות
-                    </div>
-                    
-                    <strong>סכמת צבעים:</strong><br>
-                    🔴 <strong>דחוף מאוד (30+ קופונים)</strong> - ציון מיידי!<br>
-                    🟠 <strong>קרוב לסף (24-29 קופונים)</strong> - להכין<br>
-                    🟡 <strong>בדרך לסף (15-23 קופונים)</strong> - לעקוב<br>
-                    🔸 <strong>רחוקים מהסף (פחות מ-15)</strong> - עוד זמן<br>
-                    ✅ <strong>טופלו</strong> - סומנו לטיפול
-                </div>
-            </div>
-
-            <!-- העלאת קבצים -->
-            <div class="upload-section" id="uploadSection" style="display: none;">
-                <h3>📁 העלאת קבצים</h3>
-                <div style="margin: 20px 0;">
-                    <label for="studentsFile" class="file-label">
-                        📋 קובץ רשימת סטודנטים
+        <div class="file-upload-section">
+            <div class="file-upload-grid">
+                <div class="file-upload-box">
+                    <h3>קובץ משתתפים</h3>
+                    <label for="participantsFile">
+                        📁 בחר קובץ
+                        <input type="file" id="participantsFile" accept=".xlsx,.xls,.csv">
                     </label>
-                    <input type="file" id="studentsFile" class="file-input" accept=".xlsx,.xls">
-                    
-                    <label for="couponsFile" class="file-label">
-                        🎫 קובץ קופונים נוכחי
-                    </label>
-                    <input type="file" id="couponsFile" class="file-input" accept=".xlsx,.xls">
+                    <div class="file-status" id="participantsStatus"></div>
                 </div>
-                <div id="fileStatus" style="margin-top: 15px; color: #666;"></div>
-            </div>
+                
+                <div class="file-upload-box">
+                    <h3>קובץ קופונים</h3>
+                    <label for="couponsFile">
+                        🎟️ בחר קובץ
+                        <input type="file" id="couponsFile" accept=".xlsx,.xls,.csv">
+                    </label>
+                    <div class="file-status" id="couponsStatus"></div>
+                </div>
 
-            <!-- התראות -->
-            <div id="alertsContainer"></div>
+                <div class="file-upload-box">
+                    <h3>קובץ שנים</h3>
+                    <label for="yearsFile">
+                        📅 בחר קובץ
+                        <input type="file" id="yearsFile" accept=".xlsx,.xls,.csv">
+                    </label>
+                    <div class="file-status" id="yearsStatus"></div>
+                </div>
+            </div>
             
-            <!-- התראה על שינויים לא שמורים -->
-            <div id="unsavedChanges" class="unsaved-changes" style="display: none;">
-                ⚠️ יש שינויים לא שמורים. לחץ על "💾 שמור שינויים" כדי לשמור.
+            <button class="process-button" id="processButton" onclick="processFiles()" disabled>
+                עבד את הקבצים
+            </button>
+        </div>
+
+        <div class="controls" style="display: none;" id="controlsSection">
+            <div class="search-filters">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="חיפוש חופשי - שם, ת.ז, מייל...">
+                    <span class="search-icon">🔍</span>
+                </div>
+                <select id="statusFilter">
+                    <option value="">כל הסטטוסים</option>
+                    <option value="critical">דחוף</option>
+                    <option value="near">קרוב לסף</option>
+                    <option value="progressing">בדרך לסף</option>
+                    <option value="far">רחוק מהסף</option>
+                </select>
+                <select id="yearFilter">
+                    <option value="">כל השנים</option>
+                    <option value="א">שנה א'</option>
+                    <option value="ב">שנה ב'</option>
+                    <option value="ג">שנה ג'</option>
+                    <option value="ד">שנה ד'</option>
+                    <option value="מיל">מילואים</option>
+                </select>
+                <select id="sortBy">
+                    <option value="name">מיון לפי שם</option>
+                    <option value="coupons">מיון לפי קופונים</option>
+                    <option value="status">מיון לפי סטטוס</option>
+                    <option value="year">מיון לפי שנה</option>
+                </select>
+                <button onclick="applyFilters()">🔍 סנן וחפש</button>
             </div>
+        </div>
 
-            <!-- תוצאות -->
-            <div class="results-section" id="resultsSection" style="display: none;">
-                <div class="summary-card">
-                    <h3 style="color: #667eea;">📊 סיכום מצב</h3>
-                    <div id="summaryContent"></div>
-                </div>
+        <div class="stats-container" style="display: none;" id="statsContainer">
+            <div class="stat-card">
+                <h3>סה"כ סטודנטים</h3>
+                <div class="number" id="totalStudents">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>דחוף</h3>
+                <div class="number" id="criticalCount">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>קרוב לסף</h3>
+                <div class="number" id="nearCount">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>בדרך לסף</h3>
+                <div class="number" id="progressingCount">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>רחוק מהסף</h3>
+                <div class="number" id="farCount">0</div>
+            </div>
+        </div>
 
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
-                </div>
-                <p style="text-align: center; margin: 10px 0; color: #666;" id="progressText">0% מהסטודנטים עברו</p>
-
-                <!-- אזור חיפוש -->
-                <div class="search-section" id="searchSection">
-                    <h3>🔍 חיפוש סטודנטים</h3>
-                    <div class="search-input-container">
-                        <input type="text" id="searchInput" placeholder="חפש לפי שם פרטי, שם משפחה או תעודת זהות..." 
-                               class="search-input" oninput="performSearch()">
-                        <button class="btn" onclick="clearSearch()" style="background: #6c757d;">
-                            ❌ נקה
-                        </button>
-                        <div id="searchResults" class="search-results"></div>
-                    </div>
-                    <div style="margin-top: 15px; text-align: center; color: #666; font-size: 0.9rem;">
-                        💡 דוגמאות: "משה", "כהן", "123456", "@gmail.com"
-                    </div>
-                </div>
-
-                <div class="button-grid">
-                    <button class="btn btn-save" onclick="saveChanges()">
-                        💾 שמור שינויים
-                    </button>
-                    <button class="btn btn-download" onclick="downloadExcel()">
-                        📥 הורד דוח אקסל מפורט
-                    </button>
-                    <button class="btn btn-urgent" onclick="showUrgentOnly()">
-                        🚨 דחוף מאוד (30+)
-                    </button>
-                    <button class="btn btn-warning" onclick="showNeedGrading()">
-                        🟠 מגיעים לסף (24+)
-                    </button>
-                    <button class="btn" onclick="showProgress()">
-                        📈 בדרך לסף (15-23)
-                    </button>
-                    <button class="btn" onclick="showFarFromThreshold()" style="background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);">
-                        🔸 רחוקים מהסף (<15)
-                    </button>
-                    <button class="btn" onclick="showHandledStudents()" style="background: linear-gradient(135deg, #20c997 0%, #17a085 100%);">
-                        ✅ הצג מטופלים
-                    </button>
-                    <button class="btn" onclick="showAllStudents()">
-                        👥 כל הסטודנטים
-                    </button>
-                    <button class="btn" onclick="debugData()" style="background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);">
-                        🔍 דיבוג נתונים
-                    </button>
-                    <button class="btn" onclick="clearData()">
-                        🗑️ נקה נתונים
-                    </button>
-                </div>
-
-                <!-- פעולות על סטודנטים נבחרים -->
-                <div id="bulkActions" class="bulk-actions">
-                    <h4>🎯 פעולות על סטודנטים נבחרים</h4>
-                    <div style="text-align: center; margin-bottom: 15px;">
-                        <span id="selectedCount" style="font-weight: bold; font-size: 1.1rem; color: #1976d2;">0 נבחרו</span>
-                    </div>
-                    <div class="bulk-actions-grid">
-                        <button class="btn" onclick="markSelectedAsHandled()" style="background: #20c997;">
-                            ✅ סמן כטופלו
-                        </button>
-                        <button class="btn" onclick="markSelectedAsUnhandled()" style="background: #6c757d;">
-                            ↩️ בטל טיפול
-                        </button>
-                        <button class="btn" onclick="exportSelectedOnly()" style="background: #28a745;">
-                            📤 ייצא נבחרים
-                        </button>
-                        <button class="btn" onclick="changeSelectedStatus()" style="background: #17a2b8;">
-                            🔄 שנה סטטוס
-                        </button>
-                        <button class="btn" onclick="sendEmailToSelected()" style="background: #fd7e14;">
-                            📧 שלח אימייל
-                        </button>
-                        <button class="btn" onclick="printSelectedList()" style="background: #6f42c1;">
-                            🖨️ הדפס רשימה
-                        </button>
-                        <button class="btn" onclick="clearSelection()" style="background: #dc3545;">
-                            ❌ בטל בחירה
-                        </button>
-                        <button class="btn" onclick="selectAllVisible()" style="background: #007bff;">
-                            ☑️ בחר הכל
-                        </button>
-                    </div>
-                </div>
-
-                <div class="table-container hidden" id="tableContainer">
-                    <div style="padding: 10px; background: #f8f9fa; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                        <div>
-                            <strong id="tableTitle">טבלת סטודנטים</strong>
-                            <span id="tableCount" style="color: #666; margin-right: 10px;"></span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                            <label style="font-weight: bold; color: #495057;">🔃 מיון:</label>
-                            <select id="sortSelect" onchange="applySorting()" style="padding: 5px 10px; border-radius: 5px; border: 1px solid #ccc;">
-                                <option value="credits-desc">קופונים (יורד)</option>
-                                <option value="credits-asc">קופונים (עולה)</option>
-                                <option value="first-name">שם פרטי</option>
-                                <option value="last-name">שם משפחה</option>
-                                <option value="full-name">שם מלא</option>
-                                <option value="status">סטטוס</option>
-                            </select>
-                            <button id="exportCurrentBtn" class="export-mini-btn" onclick="exportCurrentCategory()">
-                                📤 ייצא קטגוריה
-                            </button>
-                        </div>
-                    </div>
-                    <table id="studentsTable">
-                        <thead>
-                            <tr>
-                                <th>
-                                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll()"> 
-                                    בחר הכל
-                                </th>
-                                <th>שם</th>
-                                <th>תעודת זהות</th>
-                                <th>אימייל</th>
-                                <th>קופונים</th>
-                                <th>סטטוס ציון</th>
-                                <th>רמת דחיפות</th>
-                                <th>פעולות</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tableBody">
-                        </tbody>
-                    </table>
+        <div class="results-section" id="resultsSection">
+            <div class="table-container">
+                <table id="studentsTable">
+                    <thead>
+                        <tr>
+                            <th>שם מלא</th>
+                            <th>ת.ז</th>
+                            <th>מייל</th>
+                            <th>שנה</th>
+                            <th>קופונים</th>
+                            <th>ציון</th>
+                            <th>סטטוס</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentsTableBody">
+                    </tbody>
+                </table>
+                <div id="noResults" class="no-results" style="display: none;">
+                    לא נמצאו תוצאות התואמות לחיפוש
                 </div>
             </div>
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
-        // משתנים גלובליים
-        let allStudentsData = [];
-        let studentsFileLoaded = false;
-        let couponsFileLoaded = false;
-        let xlsxLibraryLoaded = false;
-        let rawStudentsData = [];
-        let rawCouponsData = [];
-        let handledStudents = new Set();
-        let currentDisplayedStudents = [];
-        let currentCategoryName = '';
-        let currentSearchTerm = '';
-        let originalDataBeforeSearch = [];
-        let hasUnsavedChanges = false;
+        let participants = [];
+        let couponsData = {};
+        let yearsData = {};
+        let students = [];
+        let filesUploaded = {
+            participants: false,
+            coupons: false,
+            years: false
+        };
 
-        // קבועים
-        const URGENT_THRESHOLD = 30;
-        const WARNING_THRESHOLD = 24;
-        const PROGRESS_THRESHOLD = 15;
-
-        // טעינת ספריית XLSX
-        function loadXLSXLibrary() {
-            console.log('מתחיל לטעון ספריית XLSX...');
-            
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-            script.crossOrigin = 'anonymous';
-            
-            script.onload = function() {
-                console.log('ספריית XLSX נטענה בהצלחה');
-                xlsxLibraryLoaded = true;
-                updateLibraryStatus('✅ המערכת מוכנה לשימוש!', 'success');
-                showUploadSection();
-                loadFromLocalStorage();
-            };
-            
-            script.onerror = function() {
-                console.error('שגיאה בטעינת ספריית XLSX');
-                updateLibraryStatus('❌ שגיאה בטעינת ספריות. נסה לרענן את הדף.', 'error');
-            };
-            
-            document.head.appendChild(script);
-        }
-
-        function updateLibraryStatus(message, type) {
-            const statusDiv = document.getElementById('libraryStatus');
-            statusDiv.textContent = message;
-            statusDiv.className = 'library-status';
-            
-            if (type === 'success') {
-                statusDiv.style.background = '#d4edda';
-                statusDiv.style.color = '#155724';
-            } else if (type === 'error') {
-                statusDiv.style.background = '#f8d7da';
-                statusDiv.style.color = '#721c24';
-            }
-        }
-
-        function showUploadSection() {
-            document.getElementById('uploadSection').style.display = 'block';
-            
-            try {
-                document.getElementById('studentsFile').addEventListener('change', handleStudentsFile);
-                document.getElementById('couponsFile').addEventListener('change', handleCouponsFile);
-                console.log('Event listeners נוספו בהצלחה');
-            } catch (error) {
-                console.error('שגיאה בהוספת event listeners:', error);
-                showAlert('שגיאה בהגדרת הממשק. אנא רענן את הדף.', 'error');
-            }
-        }
-
-        // ניהול שינויים לא שמורים
-        function markUnsavedChanges() {
-            hasUnsavedChanges = true;
-            document.getElementById('unsavedChanges').style.display = 'block';
-        }
-
-        function clearUnsavedChanges() {
-            hasUnsavedChanges = false;
-            document.getElementById('unsavedChanges').style.display = 'none';
-            showSaveIndicator();
-        }
-
-        function showSaveIndicator() {
-            const indicator = document.getElementById('saveIndicator');
-            indicator.classList.add('show');
-            setTimeout(() => {
-                indicator.classList.remove('show');
-            }, 3000);
-        }
-
-        function saveChanges() {
-            if (!hasUnsavedChanges) {
-                showAlert('אין שינויים לשמירה', 'info');
-                return;
-            }
-
-            try {
-                saveToLocalStorage();
-                updateDisplay();
-                clearUnsavedChanges();
-                showAlert('✅ השינויים נשמרו בהצלחה!', 'success');
+        // File upload handlers
+        document.getElementById('participantsFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('participantsStatus').textContent = 'טוען...';
+                document.getElementById('participantsStatus').className = 'file-status';
                 
-                // רענון הטבלה הנוכחית אם מוצגת
-                if (currentDisplayedStudents.length > 0) {
-                    applySorting();
-                }
-            } catch (error) {
-                showAlert('שגיאה בשמירת השינויים: ' + error.message, 'error');
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, {type: 'array'});
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        participants = XLSX.utils.sheet_to_json(firstSheet);
+                        
+                        filesUploaded.participants = true;
+                        document.getElementById('participantsStatus').textContent = `✓ ${participants.length} משתתפים נטענו`;
+                        document.getElementById('participantsStatus').className = 'file-status success';
+                        checkAllFiles();
+                    } catch (error) {
+                        document.getElementById('participantsStatus').textContent = '❌ שגיאה בקריאת הקובץ';
+                        document.getElementById('participantsStatus').className = 'file-status error';
+                    }
+                };
+                reader.readAsArrayBuffer(file);
             }
-        }
+        });
 
-        // שמירה וטעינה מהזיכרון המקומי
-        function saveToLocalStorage() {
-            try {
-                if (typeof(Storage) !== "undefined") {
-                    const data = {
-                        allStudentsData: allStudentsData,
-                        studentsFileLoaded: studentsFileLoaded,
-                        couponsFileLoaded: couponsFileLoaded,
-                        handledStudents: Array.from(handledStudents),
-                        timestamp: new Date().getTime()
-                    };
-                    localStorage.setItem('studentManagementData', JSON.stringify(data));
-                    console.log('נתונים נשמרו בזיכרון המקומי');
-                }
-            } catch (error) {
-                console.error('שגיאה בשמירת נתונים:', error);
-            }
-        }
-
-        function loadFromLocalStorage() {
-            try {
-                if (typeof(Storage) !== "undefined") {
-                    const saved = localStorage.getItem('studentManagementData');
-                    if (saved) {
-                        const data = JSON.parse(saved);
-                        const dayInMs = 24 * 60 * 60 * 1000;
-                        if (new Date().getTime() - data.timestamp < dayInMs) {
-                            allStudentsData = data.allStudentsData || [];
-                            studentsFileLoaded = data.studentsFileLoaded || false;
-                            couponsFileLoaded = data.couponsFileLoaded || false;
-                            handledStudents = new Set(data.handledStudents || []);
-                            
-                            if (allStudentsData.length > 0) {
-                                updateDisplay();
-                                showAlert('נתונים נטענו מהזיכרון המקומי', 'info');
-                                console.log('נתונים נטענו מהזיכרון המקומי');
+        document.getElementById('couponsFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('couponsStatus').textContent = 'טוען...';
+                document.getElementById('couponsStatus').className = 'file-status';
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, {type: 'array'});
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const couponsArray = XLSX.utils.sheet_to_json(firstSheet);
+                        
+                        // Process coupons data
+                        couponsData = {};
+                        couponsArray.forEach(row => {
+                            const email = Object.values(row)[0];
+                            if (email && typeof email === 'string' && email.includes('@')) {
+                                couponsData[email.toLowerCase()] = (couponsData[email.toLowerCase()] || 0) + 1;
                             }
-                        } else {
-                            console.log('נתונים ישנים מדי, מתחיל מחדש');
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('שגיאה בטעינת נתונים:', error);
-            }
-        }
-
-        function handleStudentsFile(event) {
-            if (!xlsxLibraryLoaded) {
-                showAlert('אנא המתן לטעינת הספריות', 'warning');
-                return;
-            }
-
-            const file = event.target.files[0];
-            if (!file) return;
-
-            console.log('מתחיל לעבד קובץ סטודנטים:', file.name);
-            showAlert('טוען קובץ רשימת סטודנטים...', 'info');
-            updateFileStatus('קובץ סטודנטים: ' + file.name);
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data);
-                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-                    rawStudentsData = rawData;
-                    console.log('נתונים גולמיים מהקובץ:', rawData.slice(0, 5));
-                    
-                    const students = processStudentsData(rawData);
-                    if (students.length > 0) {
-                        allStudentsData = students.map(student => ({
-                            ...student,
-                            creditsEarned: 0,
-                            email: '',
-                            hasCouponData: false
-                        }));
-                        studentsFileLoaded = true;
-                        showAlert(`נטען בהצלחה! נמצאו ${students.length} סטודנטים`, 'success');
-                        checkReadyToProcess();
-                        saveToLocalStorage();
-                        console.log('קובץ סטודנטים עובד בהצלחה');
-                    } else {
-                        throw new Error('לא נמצאו נתוני סטודנטים תקינים');
-                    }
-                } catch (error) {
-                    console.error('שגיאה בעיבוד קובץ סטודנטים:', error);
-                    showAlert('שגיאה בקריאת קובץ הסטודנטים: ' + error.message, 'error');
-                }
-            };
-            
-            reader.onerror = function() {
-                console.error('שגיאה בקריאת הקובץ');
-                showAlert('שגיאה בקריאת הקובץ', 'error');
-            };
-            
-            reader.readAsArrayBuffer(file);
-        }
-
-        function handleCouponsFile(event) {
-            if (!xlsxLibraryLoaded) {
-                showAlert('אנא המתן לטעינת הספריות', 'warning');
-                return;
-            }
-
-            const file = event.target.files[0];
-            if (!file) return;
-
-            if (!studentsFileLoaded) {
-                showAlert('אנא העלה קודם קובץ רשימת סטודנטים', 'warning');
-                event.target.value = '';
-                return;
-            }
-
-            console.log('מתחיל לעבד קובץ קופונים:', file.name);
-            showAlert('טוען קובץ קופונים...', 'info');
-            updateFileStatus('קובץ קופונים: ' + file.name, true);
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data);
-                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-                    rawCouponsData = rawData;
-                    console.log('נתוני קופונים גולמיים:', rawData.slice(0, 5));
-                    
-                    const result = processCouponsData(rawData);
-                    if (result.success) {
-                        couponsFileLoaded = true;
-                        showAlert(result.message, 'success');
-                        updateDisplay();
-                        saveToLocalStorage();
-                        console.log('קובץ קופונים עובד בהצלחה');
-                    } else {
-                        throw new Error(result.message);
-                    }
-                } catch (error) {
-                    console.error('שגיאה בעיבוד קובץ קופונים:', error);
-                    showAlert('שגיאה בקריאת קובץ הקופונים: ' + error.message, 'error');
-                }
-            };
-            
-            reader.onerror = function() {
-                console.error('שגיאה בקריאת קובץ הקופונים');
-                showAlert('שגיאה בקריאת קובץ הקופונים', 'error');
-            };
-            
-            reader.readAsArrayBuffer(file);
-        }
-
-        function processStudentsData(rawData) {
-            console.log('מעבד נתוני סטודנטים...');
-            const students = [];
-            
-            let headerRow = -1;
-            for (let i = 0; i < Math.min(10, rawData.length); i++) {
-                const row = rawData[i];
-                if (row && row.some(cell => 
-                    cell && (cell.toString().includes('שם') || 
-                            cell.toString().includes('זהות') ||
-                            cell.toString().includes('Name') ||
-                            cell.toString().includes('ציון') ||
-                            cell.toString().includes('סופי'))
-                )) {
-                    headerRow = i;
-                    break;
-                }
-            }
-
-            if (headerRow === -1) {
-                headerRow = 2;
-            }
-
-            console.log('שורת כותרות נמצאה ב:', headerRow);
-            console.log('כותרות:', rawData[headerRow]);
-
-            for (let i = headerRow + 1; i < rawData.length; i++) {
-                const row = rawData[i];
-                if (row && row[0] && row[1]) {
-                    let finalGrade = row[4]?.toString().trim() || '';
-                    
-                    if (finalGrade.includes('עבר') || finalGrade.includes('העביר') || finalGrade === 'V' || finalGrade === 'P') {
-                        finalGrade = 'עבר';
-                    } else if (finalGrade.includes('נכשל') || finalGrade.includes('לא עבר') || finalGrade === 'F') {
-                        finalGrade = 'לא עבר';
-                    }
-                    
-                    const student = {
-                        name: row[0]?.toString().trim(),
-                        id: row[1]?.toString().trim(),
-                        status: row[2]?.toString().trim() || '',
-                        classStatus: row[3]?.toString().trim() || '',
-                        finalGrade: finalGrade,
-                        courseCode: row[17]?.toString().trim() || row[row.length-1]?.toString().trim() || ''
-                    };
-                    
-                    students.push(student);
-                    
-                    if (students.length <= 5) {
-                        console.log(`סטודנט ${students.length}:`, {
-                            name: student.name,
-                            id: student.id,
-                            finalGrade: `"${student.finalGrade}"`,
-                            originalGrade: `"${row[4]}"`
                         });
+                        
+                        filesUploaded.coupons = true;
+                        document.getElementById('couponsStatus').textContent = `✓ ${Object.keys(couponsData).length} סטודנטים עם קופונים`;
+                        document.getElementById('couponsStatus').className = 'file-status success';
+                        checkAllFiles();
+                    } catch (error) {
+                        document.getElementById('couponsStatus').textContent = '❌ שגיאה בקריאת הקובץ';
+                        document.getElementById('couponsStatus').className = 'file-status error';
                     }
-                }
+                };
+                reader.readAsArrayBuffer(file);
             }
+        });
 
-            const filteredStudents = students.filter(s => s.name && s.id);
-            console.log('נמצאו', filteredStudents.length, 'סטודנטים תקינים');
-            
-            return filteredStudents;
-        }
-
-        function processCouponsData(rawData) {
-            console.log('מעבד נתוני קופונים...');
-            try {
-                const allCoupons = [];
+        document.getElementById('yearsFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('yearsStatus').textContent = 'טוען...';
+                document.getElementById('yearsStatus').className = 'file-status';
                 
-                for (let i = 1; i < rawData.length; i++) {
-                    const row = rawData[i];
-                    if (row && row[3]) {
-                        allCoupons.push({
-                            firstName: row[0]?.toString().trim() || '',
-                            lastName: row[1]?.toString().trim() || '',
-                            email: row[2]?.toString().trim() || '',
-                            loginId: row[3]?.toString().trim(),
-                            creditsEarned: parseFloat(row[4]) || 0
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, {type: 'array'});
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const yearsArray = XLSX.utils.sheet_to_json(firstSheet);
+                        
+                        // Process years data
+                        yearsData = {};
+                        yearsArray.forEach(row => {
+                            const name = row['כותרת עברית']?.trim();
+                            const id = row['כותרת עברית_1']?.toString().trim();
+                            const year = row['שנה פדגוגית:']?.trim();
+                            
+                            if (name && year) {
+                                yearsData[name] = year;
+                            }
+                            if (id && year) {
+                                yearsData[id] = year;
+                            }
                         });
+                        
+                        filesUploaded.years = true;
+                        document.getElementById('yearsStatus').textContent = `✓ ${Object.keys(yearsData).length / 2} סטודנטים עם נתוני שנה`;
+                        document.getElementById('yearsStatus').className = 'file-status success';
+                        checkAllFiles();
+                    } catch (error) {
+                        document.getElementById('yearsStatus').textContent = '❌ שגיאה בקריאת הקובץ';
+                        document.getElementById('yearsStatus').className = 'file-status error';
                     }
-                }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        });
 
-                console.log('נמצאו', allCoupons.length, 'רשומות קופונים');
-
-                const courseStudentIds = new Set(allStudentsData.map(s => s.id));
-                
-                const relevantCoupons = allCoupons.filter(coupon => 
-                    courseStudentIds.has(coupon.loginId)
-                );
-
-                console.log('מתוכם', relevantCoupons.length, 'רלוונטיים לקורס');
-
-                const couponsMap = {};
-                relevantCoupons.forEach(coupon => {
-                    couponsMap[coupon.loginId] = coupon;
-                });
-
-                allStudentsData = allStudentsData.map(student => {
-                    const couponData = couponsMap[student.id];
-                    return {
-                        ...student,
-                        creditsEarned: couponData?.creditsEarned || 0,
-                        email: couponData?.email || student.email,
-                        firstName: couponData?.firstName || '',
-                        lastName: couponData?.lastName || '',
-                        hasCouponData: !!couponData
-                    };
-                });
-
-                const totalInFile = allCoupons.length;
-                const relevantCount = relevantCoupons.length;
-                const urgentCount = allStudentsData.filter(s => s.finalGrade !== 'עבר' && s.creditsEarned >= URGENT_THRESHOLD).length;
-
-                let message = `עודכן בהצלחה! מתוך ${totalInFile} רשומות, ${relevantCount} רלוונטיות לקורס`;
-                if (urgentCount > 0) {
-                    message += `. 🚨 ${urgentCount} דחופים מאוד!`;
-                }
-
-                return { success: true, message: message };
-
-            } catch (error) {
-                console.error('שגיאה בעיבוד קופונים:', error);
-                return { success: false, message: error.message };
+        function checkAllFiles() {
+            if (filesUploaded.participants && filesUploaded.coupons && filesUploaded.years) {
+                document.getElementById('processButton').disabled = false;
             }
         }
 
-        function updateFileStatus(message, append = false) {
-            const statusDiv = document.getElementById('fileStatus');
-            if (append) {
-                statusDiv.innerHTML += '<br>' + message;
+        function getStudentYear(name, id) {
+            // Try to match by name first
+            let year = yearsData[name];
+            
+            // If not found, try by ID
+            if (!year && id) {
+                year = yearsData[id];
+            }
+            
+            // Try different name formats
+            if (!year && name) {
+                // Try swapping first and last name
+                const parts = name.split(' ');
+                if (parts.length === 2) {
+                    const reversedName = `${parts[1]} ${parts[0]}`;
+                    year = yearsData[reversedName];
+                }
+            }
+            
+            return year || 'א'; // Default to year א if not found
+        }
+
+        function getRequiredCoupons(year) {
+            if (!year) return 30;
+            
+            // Check if it's מילואים
+            if (year.includes('*מיל*')) {
+                return 18;
+            }
+            
+            // Check the year letter
+            const yearLetter = year.trim().charAt(0);
+            if (yearLetter === 'א') {
+                return 30;
             } else {
-                statusDiv.innerHTML = message;
+                return 24; // שנה ב, ג, ד
             }
         }
 
-        function checkReadyToProcess() {
-            if (studentsFileLoaded) {
-                updateDisplay();
+        function getStatus(coupons, year) {
+            const required = getRequiredCoupons(year);
+            
+            if (year.includes('*מיל*')) {
+                // מילואים thresholds
+                if (coupons >= 18) return 'critical';
+                if (coupons >= 12) return 'near';
+                if (coupons >= 10) return 'progressing';
+                return 'far';
+            } else if (required === 30) {
+                // שנה א thresholds
+                if (coupons >= 30) return 'critical';
+                if (coupons >= 24) return 'near';
+                if (coupons >= 18) return 'progressing';
+                return 'far';
+            } else {
+                // שנה ב, ג, ד thresholds
+                if (coupons >= 24) return 'critical';
+                if (coupons >= 18) return 'near';
+                if (coupons >= 12) return 'progressing';
+                return 'far';
             }
         }
 
-        function updateDisplay() {
-            console.log('מעדכן תצוגה...');
-            if (allStudentsData.length === 0) return;
+        function getStatusText(status) {
+            switch(status) {
+                case 'critical': return 'דחוף';
+                case 'near': return 'קרוב לסף';
+                case 'progressing': return 'בדרך לסף';
+                case 'far': return 'רחוק מהסף';
+                default: return 'לא ידוע';
+            }
+        }
 
-            try {
-                const passedCount = allStudentsData.filter(s => s.finalGrade === 'עבר').length;
-                const urgentCount = allStudentsData.filter(s => 
-                    s.finalGrade !== 'עבר' && 
-                    s.creditsEarned >= URGENT_THRESHOLD && 
-                    !handledStudents.has(s.id)
-                ).length;
-                const nearCount = allStudentsData.filter(s => 
-                    s.finalGrade !== 'עבר' && 
-                    s.creditsEarned >= WARNING_THRESHOLD && 
-                    s.creditsEarned < URGENT_THRESHOLD && 
-                    !handledStudents.has(s.id)
-                ).length;
-                const progressCount = allStudentsData.filter(s => 
-                    s.finalGrade !== 'עבר' && 
-                    s.creditsEarned >= PROGRESS_THRESHOLD && 
-                    s.creditsEarned < WARNING_THRESHOLD && 
-                    !handledStudents.has(s.id)
-                ).length;
-                const farFromThresholdCount = allStudentsData.filter(s => 
-                    s.finalGrade !== 'עבר' && 
-                    s.creditsEarned > 0 && 
-                    s.creditsEarned < PROGRESS_THRESHOLD && 
-                    !handledStudents.has(s.id)
-                ).length;
-                const handledCount = handledStudents.size;
+        function getYearBadgeClass(year) {
+            if (!year) return 'year-a';
+            
+            if (year.includes('*מיל*')) return 'year-mil';
+            
+            const yearLetter = year.trim().charAt(0);
+            switch(yearLetter) {
+                case 'א': return 'year-a';
+                case 'ב': return 'year-b';
+                case 'ג': return 'year-c';
+                case 'ד': return 'year-d';
+                default: return 'year-a';
+            }
+        }
 
-                document.getElementById('totalStudents').textContent = allStudentsData.length;
-                document.getElementById('passedStudents').textContent = passedCount;
-                document.getElementById('urgentGrading').textContent = urgentCount;
-                document.getElementById('nearThreshold').textContent = nearCount;
-                document.getElementById('farFromThreshold').textContent = farFromThresholdCount;
-                document.getElementById('handledStudents').textContent = handledCount;
+        function processFiles() {
+            students = [];
+            
+            participants.forEach(participant => {
+                // Extract relevant fields
+                const idField = Object.keys(participant).find(key => 
+                    key.includes('ת.ז') || key.includes('תז') || key.includes('ת"ז') || key.includes('מספר זהות')
+                );
+                const nameField = Object.keys(participant).find(key => 
+                    key.includes('שם') && !key.includes('פרטי') && !key.includes('משפחה')
+                );
+                const emailField = Object.keys(participant).find(key => 
+                    key.includes('דוא"ל') || key.includes('מייל') || key.includes('email')
+                );
+                const gradeField = Object.keys(participant).find(key => 
+                    key.includes('ציון') || key.includes('grade')
+                );
+                const firstNameField = Object.keys(participant).find(key => 
+                    key.includes('שם פרטי')
+                );
+                const lastNameField = Object.keys(participant).find(key => 
+                    key.includes('שם משפחה')
+                );
+                
+                if (participant[idField] && participant[nameField]) {
+                    const email = participant[emailField] || '';
+                    const id = participant[idField].toString();
+                    const name = participant[nameField];
+                    const firstName = participant[firstNameField] || name.split(' ')[0] || '';
+                    const lastName = participant[lastNameField] || name.split(' ')[1] || '';
+                    const grade = participant[gradeField];
+                    const coupons = email ? (couponsData[email.toLowerCase()] || 0) : 0;
+                    const year = getStudentYear(name, id);
+                    
+                    students.push({
+                        id: id,
+                        name: name,
+                        firstName: firstName,
+                        lastName: lastName,
+                        email: email,
+                        grade: grade || 'אין ציון',
+                        coupons: coupons,
+                        year: year
+                    });
+                }
+            });
+            
+            // Show results section
+            document.getElementById('controlsSection').style.display = 'block';
+            document.getElementById('statsContainer').style.display = 'grid';
+            document.getElementById('resultsSection').style.display = 'block';
+            
+            updateStats();
+            renderTable();
+        }
 
-                const passPercent = (passedCount / allStudentsData.length * 100).toFixed(1);
-                document.getElementById('progressFill').style.width = passPercent + '%';
-                document.getElementById('progressText').textContent = `${passPercent}% מהסטודנטים עברו`;
+        function updateStats() {
+            const stats = {
+                total: students.length,
+                critical: 0,
+                near: 0,
+                progressing: 0,
+                far: 0
+            };
 
-                const summaryContent = document.getElementById('summaryContent');
-                summaryContent.innerHTML = `
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 15px 0;">
-                        <div><strong>סה"כ סטודנטים:</strong> ${allStudentsData.length}</div>
-                        <div><strong>עברו:</strong> ${passedCount} (${passPercent}%)</div>
-                        <div style="color: #dc3545;"><strong>דחוף מאוד:</strong> ${urgentCount}</div>
-                        <div style="color: #fd7e14;"><strong>קרובים לסף:</strong> ${nearCount}</div>
-                        <div style="color: #ffc107;"><strong>בדרך:</strong> ${progressCount}</div>
-                        <div style="color: #e0a800;"><strong>רחוקים מהסף:</strong> ${farFromThresholdCount}</div>
-                        <div style="color: #20c997;"><strong>טופלו:</strong> ${handledCount}</div>
-                        <div><strong>עם נתוני קופונים:</strong> ${allStudentsData.filter(s => s.hasCouponData).length}</div>
-                    </div>
+            students.forEach(student => {
+                const status = getStatus(student.coupons, student.year);
+                stats[status]++;
+            });
+
+            document.getElementById('totalStudents').textContent = stats.total;
+            document.getElementById('criticalCount').textContent = stats.critical;
+            document.getElementById('nearCount').textContent = stats.near;
+            document.getElementById('progressingCount').textContent = stats.progressing;
+            document.getElementById('farCount').textContent = stats.far;
+        }
+
+        function renderTable(filteredStudents = null) {
+            const tbody = document.getElementById('studentsTableBody');
+            const studentsToRender = filteredStudents || students;
+            
+            tbody.innerHTML = '';
+
+            if (studentsToRender.length === 0) {
+                document.getElementById('studentsTable').style.display = 'none';
+                document.getElementById('noResults').style.display = 'block';
+                return;
+            }
+
+            document.getElementById('studentsTable').style.display = 'table';
+            document.getElementById('noResults').style.display = 'none';
+
+            studentsToRender.forEach(student => {
+                const status = getStatus(student.coupons, student.year);
+                const yearBadgeClass = getYearBadgeClass(student.year);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${student.name}</td>
+                    <td>${student.id}</td>
+                    <td>${student.email}</td>
+                    <td><span class="year-badge ${yearBadgeClass}">${student.year}</span></td>
+                    <td>${student.coupons}</td>
+                    <td>${student.grade}</td>
+                    <td><span class="status-badge status-${status}">${getStatusText(status)}</span></td>
                 `;
-
-                document.getElementById('resultsSection').style.display = 'block';
-
-                if (urgentCount > 0) {
-                    showAlert(`🚨 יש ${urgentCount} סטודנטים שצריכים ציון מיידי!`, 'warning');
-                }
-
-                console.log('תצוגה עודכנה בהצלחה');
-            } catch (error) {
-                console.error('שגיאה בעדכון התצוגה:', error);
-                showAlert('שגיאה בעדכון התצוגה: ' + error.message, 'error');
-            }
-        }
-
-        function showAlert(message, type) {
-            try {
-                const alertsContainer = document.getElementById('alertsContainer');
-                const alert = document.createElement('div');
-                alert.className = `alert alert-${type}`;
-                alert.innerHTML = message;
-                alertsContainer.appendChild(alert);
-
-                setTimeout(() => {
-                    if (alert.parentNode) {
-                        alert.remove();
-                    }
-                }, 7000);
-
-                alert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                console.log('התראה:', message);
-            } catch (error) {
-                console.error('שגיאה בהצגת התראה:', error);
-            }
-        }
-
-        // פונקציות חיפוש
-        function performSearch() {
-            const searchTerm = document.getElementById('searchInput').value.trim();
-            currentSearchTerm = searchTerm;
-            
-            if (searchTerm === '') {
-                clearSearch();
-                return;
-            }
-            
-            if (allStudentsData.length === 0) {
-                showAlert('אין נתונים לחיפוש. העלה קבצים תחילה.', 'warning');
-                return;
-            }
-            
-            // אם אין טבלה מוצגת, חפש בכל הנתונים
-            let dataToSearch = currentDisplayedStudents.length > 0 ? originalDataBeforeSearch.length > 0 ? originalDataBeforeSearch : currentDisplayedStudents : allStudentsData;
-            
-            if (originalDataBeforeSearch.length === 0 && currentDisplayedStudents.length > 0) {
-                originalDataBeforeSearch = [...currentDisplayedStudents];
-            }
-            
-            const searchResults = searchInData(dataToSearch, searchTerm);
-            updateSearchResults(searchResults, searchTerm);
-        }
-        
-        function searchInData(data, searchTerm) {
-            const normalizedSearchTerm = normalizeHebrewText(searchTerm.toLowerCase());
-            
-            return data.filter(student => {
-                // חיפוש בתעודת זהות
-                if (student.id && student.id.includes(searchTerm)) {
-                    return true;
-                }
-                
-                // חיפוש בשם המלא
-                if (student.name) {
-                    const normalizedName = normalizeHebrewText(student.name.toLowerCase());
-                    if (normalizedName.includes(normalizedSearchTerm)) {
-                        return true;
-                    }
-                }
-                
-                // חיפוש בשם פרטי
-                if (student.firstName) {
-                    const normalizedFirstName = normalizeHebrewText(student.firstName.toLowerCase());
-                    if (normalizedFirstName.includes(normalizedSearchTerm)) {
-                        return true;
-                    }
-                }
-                
-                // חיפוש בשם משפחה
-                if (student.lastName) {
-                    const normalizedLastName = normalizeHebrewText(student.lastName.toLowerCase());
-                    if (normalizedLastName.includes(normalizedSearchTerm)) {
-                        return true;
-                    }
-                }
-                
-                // חיפוש באימייל
-                if (student.email) {
-                    const normalizedEmail = student.email.toLowerCase();
-                    if (normalizedEmail.includes(searchTerm.toLowerCase())) {
-                        return true;
-                    }
-                }
-                
-                return false;
+                tbody.appendChild(row);
             });
         }
-        
-        function normalizeHebrewText(text) {
-            return text
-                .replace(/[\u0591-\u05C7]/g, '') // הסרת ניקוד
-                .replace(/\s+/g, ' ') // הסרת רווחים כפולים
-                .trim();
-        }
-        
-        function updateSearchResults(results, searchTerm) {
-            const searchResultsDiv = document.getElementById('searchResults');
-            
-            if (results.length === 0) {
-                searchResultsDiv.textContent = 'לא נמצאו תוצאות';
-                searchResultsDiv.style.color = '#dc3545';
-                showAlert(`לא נמצאו סטודנטים המכילים "${searchTerm}"`, 'warning');
-            } else {
-                searchResultsDiv.textContent = `נמצאו ${results.length} תוצאות`;
-                searchResultsDiv.style.color = '#28a745';
-                
-                const searchTitle = `תוצאות חיפוש: "${searchTerm}"`;
-                displayStudentsInternalWithHighlight(results, searchTitle, searchTerm);
-                currentDisplayedStudents = results;
-                currentCategoryName = searchTitle;
-                
-                showAlert(`נמצאו ${results.length} סטודנטים המכילים "${searchTerm}"`, 'success');
-            }
-        }
-        
-        function clearSearch() {
-            document.getElementById('searchInput').value = '';
-            currentSearchTerm = '';
-            
-            const searchResultsDiv = document.getElementById('searchResults');
-            searchResultsDiv.textContent = '';
-            
-            if (originalDataBeforeSearch.length > 0) {
-                displayStudentsInternal(originalDataBeforeSearch, currentCategoryName);
-                currentDisplayedStudents = originalDataBeforeSearch;
-                originalDataBeforeSearch = [];
-                showAlert('החיפוש נוקה, חזרה לתצוגה המקורית', 'info');
-            } else {
-                showAlert('החיפוש נוקה', 'info');
-            }
-        }
 
-        function displayStudents(data, title, description = '') {
-            if (currentSearchTerm) {
-                document.getElementById('searchInput').value = '';
-                document.getElementById('searchResults').textContent = '';
-                currentSearchTerm = '';
-                originalDataBeforeSearch = [];
-            }
-            
-            currentDisplayedStudents = data;
-            currentCategoryName = title;
-            
-            document.getElementById('sortSelect').value = 'credits-desc';
-            
-            displayStudentsInternal(data, title, description);
-        }
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const yearFilter = document.getElementById('yearFilter').value;
+            const sortBy = document.getElementById('sortBy').value;
 
-        function displayStudentsInternal(data, title, description = '') {
-            displayStudentsInternalWithHighlight(data, title, '');
-        }
-
-        function displayStudentsInternalWithHighlight(data, title, searchTerm = '') {
-            try {
-                const tableContainer = document.getElementById('tableContainer');
-                const tableBody = document.getElementById('tableBody');
-                const tableTitle = document.getElementById('tableTitle');
-                const tableCount = document.getElementById('tableCount');
+            let filtered = students.filter(student => {
+                const status = getStatus(student.coupons, student.year);
                 
-                tableBody.innerHTML = '';
+                // Free text search
+                const searchMatch = !searchTerm || 
+                    student.name.toLowerCase().includes(searchTerm) ||
+                    student.firstName.toLowerCase().includes(searchTerm) ||
+                    student.lastName.toLowerCase().includes(searchTerm) ||
+                    student.id.includes(searchTerm) ||
+                    student.email.toLowerCase().includes(searchTerm);
                 
-                if (data.length === 0) {
-                    showAlert(`לא נמצאו סטודנטים ב${title}`, 'info');
-                    return;
+                // Status filter
+                const statusMatch = !statusFilter || status === statusFilter;
+                
+                // Year filter
+                let yearMatch = true;
+                if (yearFilter) {
+                    if (yearFilter === 'מיל') {
+                        yearMatch = student.year.includes('*מיל*');
+                    } else {
+                        yearMatch = student.year.trim().charAt(0) === yearFilter && !student.year.includes('*מיל*');
+                    }
                 }
-
-                tableTitle.textContent = title;
-                tableCount.textContent = `(${data.length} סטודנטים)`;
-
-                const sortValue = document.getElementById('sortSelect').value;
-                let sortedData = [...data];
                 
-                switch(sortValue) {
-                    case 'credits-asc':
-                        sortedData.sort((a, b) => a.creditsEarned - b.creditsEarned);
-                        break;
-                    case 'first-name':
-                        sortedData.sort((a, b) => {
-                            const aFirst = a.firstName || a.name.split(' ')[0] || '';
-                            const bFirst = b.firstName || b.name.split(' ')[0] || '';
-                            return aFirst.localeCompare(bFirst, 'he');
-                        });
-                        break;
-                    case 'last-name':
-                        sortedData.sort((a, b) => {
-                            const aLast = a.lastName || a.name.split(' ').slice(-1)[0] || '';
-                            const bLast = b.lastName || b.name.split(' ').slice(-1)[0] || '';
-                            return aLast.localeCompare(bLast, 'he');
-                        });
-                        break;
-                    case 'full-name':
-                        sortedData.sort((a, b) => a.name.localeCompare(b.name, 'he'));
-                        break;
+                return searchMatch && statusMatch && yearMatch;
+            });
+
+            // Sort
+            filtered.sort((a, b) => {
+                switch(sortBy) {
+                    case 'name':
+                        return a.name.localeCompare(b.name);
+                    case 'coupons':
+                        return b.coupons - a.coupons;
                     case 'status':
-                        sortedData.sort((a, b) => {
-                            const aStatus = handledStudents.has(a.id) ? 'טופל' : 
-                                           a.finalGrade === 'עבר' ? 'עבר' : 'ממתין';
-                            const bStatus = handledStudents.has(b.id) ? 'טופל' : 
-                                           b.finalGrade === 'עבר' ? 'עבר' : 'ממתין';
-                            return aStatus.localeCompare(bStatus, 'he');
-                        });
-                        break;
-                    default: // 'credits-desc'
-                        sortedData.sort((a, b) => b.creditsEarned - a.creditsEarned);
-                        break;
+                        const statusOrder = { 'critical': 0, 'near': 1, 'progressing': 2, 'far': 3 };
+                        const statusA = getStatus(a.coupons, a.year);
+                        const statusB = getStatus(b.coupons, b.year);
+                        return statusOrder[statusA] - statusOrder[statusB];
+                    case 'year':
+                        return a.year.localeCompare(b.year);
+                    default:
+                        return 0;
                 }
-                
-                sortedData.forEach((student, index) => {
-                    const row = document.createElement('tr');
-                    
-                    const isHandled = handledStudents.has(student.id);
-                    
-                    let statusClass, statusText, statusClickable;
-                    if (student.finalGrade === 'עבר') {
-                        statusClass = 'status-passed';
-                        statusText = 'עבר';
-                        statusClickable = '';
-                    } else if (isHandled) {
-                        statusClass = 'status-handled';
-                        statusText = 'טופל';
-                        statusClickable = `onclick="toggleStudentStatus('${student.id}')" title="לחץ להחזרה לממתין"`;
-                    } else {
-                        statusClass = 'status-pending';
-                        statusText = 'ממתין';
-                        statusClickable = `onclick="toggleStudentStatus('${student.id}')" title="לחץ לסימון כטופל"`;
-                    }
-                    
-                    let creditsClass = 'credits-low';
-                    let urgencyText = 'רגיל';
-                    
-                    if (student.creditsEarned >= URGENT_THRESHOLD) {
-                        creditsClass = 'credits-urgent';
-                        urgencyText = isHandled ? '✅ טופל - דחוף' : '🚨 דחוף מאוד!';
-                    } else if (student.creditsEarned >= WARNING_THRESHOLD) {
-                        creditsClass = 'credits-high';
-                        urgencyText = isHandled ? '✅ טופל - קרוב לסף' : '⚠️ קרוב לסף';
-                    } else if (student.creditsEarned >= PROGRESS_THRESHOLD) {
-                        creditsClass = 'credits-medium';
-                        urgencyText = isHandled ? '✅ טופל - בדרך' : '📈 בדרך';
-                    } else if (student.creditsEarned > 0) {
-                        urgencyText = isHandled ? '✅ טופל - רחוק' : '🔸 רחוק מהסף';
-                    } else {
-                        urgencyText = '❌ אין נתונים';
-                    }
-                    
-                    if (student.finalGrade === 'עבר') {
-                        urgencyText = '✅ סיים';
-                    }
-                    
-                    const highlightedName = searchTerm ? highlightSearchTerm(student.name, searchTerm) : student.name;
-                    const highlightedId = searchTerm ? highlightSearchTerm(student.id, searchTerm) : student.id;
-                    
-                    const emailLink = student.email ? 
-                        `<a href="mailto:${student.email}" class="email-clickable">${searchTerm ? highlightSearchTerm(student.email, searchTerm) : student.email}</a>` : 
-                        'לא זמין';
-                    
-                    const actionButtons = `
-                        <button class="btn" onclick="toggleStudentStatus('${student.id}')" style="padding: 4px 8px; font-size: 0.7rem; background: ${isHandled ? '#6c757d' : '#20c997'};">
-                            ${isHandled ? '↩️ בטל' : '✅ טפל'}
-                        </button>
-                    `;
-                    
-                    row.innerHTML = `
-                        <td>
-                            <input type="checkbox" class="checkbox-student" value="${student.id}" onchange="updateSelectedCount()">
-                        </td>
-                        <td><strong>${highlightedName}</strong></td>
-                        <td>${highlightedId}</td>
-                        <td>${emailLink}</td>
-                        <td><span class="${creditsClass}">${student.creditsEarned}</span></td>
-                        <td><span class="${statusClass}" ${statusClickable}>${statusText}</span></td>
-                        <td>${urgencyText}</td>
-                        <td>${actionButtons}</td>
-                    `;
-                    
-                    if (isHandled && student.finalGrade !== 'עבר') {
-                        row.classList.add('row-handled');
-                    }
-                    
-                    tableBody.appendChild(row);
-                });
-                
-                document.getElementById('selectAll').checked = false;
-                updateSelectedCount();
-                
-                tableContainer.classList.remove('hidden');
-                tableContainer.scrollIntoView({ behavior: 'smooth' });
-                
-                showAlert(`מוצגים ${data.length} סטודנטים - ${title}`, 'info');
-                console.log('טבלה עודכנה עם', data.length, 'סטודנטים');
-            } catch (error) {
-                console.error('שגיאה בהצגת טבלה:', error);
-                showAlert('שגיאה בהצגת הטבלה: ' + error.message, 'error');
-            }
-        }
-
-        function highlightSearchTerm(text, searchTerm) {
-            if (!text || !searchTerm) return text;
-            
-            const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-            return text.replace(regex, '<span class="highlight">$1</span>');
-        }
-
-        function toggleStudentStatus(studentId) {
-            const studentName = allStudentsData.find(s => s.id === studentId)?.name || 'לא ידוע';
-            
-            if (handledStudents.has(studentId)) {
-                handledStudents.delete(studentId);
-                showAlert(`↩️ ${studentName} הוחזר למצב "ממתין"`, 'info');
-            } else {
-                handledStudents.add(studentId);
-                showAlert(`✅ ${studentName} סומן כ"טופל"`, 'success');
-            }
-            
-            markUnsavedChanges();
-            
-            if (currentDisplayedStudents.length > 0) {
-                applySorting();
-            }
-        }
-
-        function markSelectedAsHandled() {
-            const checkboxes = document.querySelectorAll('.checkbox-student:checked');
-            const selectedIds = Array.from(checkboxes).map(cb => cb.value);
-            
-            if (selectedIds.length === 0) {
-                showAlert('לא נבחרו סטודנטים', 'warning');
-                return;
-            }
-            
-            selectedIds.forEach(studentId => {
-                handledStudents.add(studentId);
-            });
-            
-            showAlert(`✅ ${selectedIds.length} סטודנטים סומנו כטופלו`, 'success');
-            markUnsavedChanges();
-            
-            if (currentDisplayedStudents.length > 0) {
-                applySorting();
-            }
-        }
-
-        function markSelectedAsUnhandled() {
-            const checkboxes = document.querySelectorAll('.checkbox-student:checked');
-            const selectedIds = Array.from(checkboxes).map(cb => cb.value);
-            
-            if (selectedIds.length === 0) {
-                showAlert('לא נבחרו סטודנטים', 'warning');
-                return;
-            }
-            
-            selectedIds.forEach(studentId => {
-                handledStudents.delete(studentId);
-            });
-            
-            showAlert(`↩️ הטיפול ב-${selectedIds.length} סטודנטים בוטל`, 'info');
-            markUnsavedChanges();
-            
-            if (currentDisplayedStudents.length > 0) {
-                applySorting();
-            }
-        }
-
-        function exportSelectedOnly() {
-            const checkboxes = document.querySelectorAll('.checkbox-student:checked');
-            const selectedIds = Array.from(checkboxes).map(cb => cb.value);
-            
-            if (selectedIds.length === 0) {
-                showAlert('לא נבחרו סטודנטים לייצוא', 'warning');
-                return;
-            }
-
-            try {
-                const selectedStudents = currentDisplayedStudents.filter(student => 
-                    selectedIds.includes(student.id)
-                );
-
-                const exportData = selectedStudents.map((student, index) => ({
-                    'מס רץ': index + 1,
-                    'שם מלא': student.name,
-                    'שם פרטי': student.firstName || '',
-                    'שם משפחה': student.lastName || '',
-                    'תעודת זהות': student.id,
-                    'אימייל': student.email || 'לא זמין',
-                    'קופונים': student.creditsEarned,
-                    'סטטוס ציון': student.finalGrade,
-                    'טופל': handledStudents.has(student.id) ? 'כן' : 'לא',
-                    'רמת דחיפות': student.creditsEarned >= URGENT_THRESHOLD ? 'דחוף מאוד' : 
-                                    student.creditsEarned >= WARNING_THRESHOLD ? 'קרוב לסף' : 
-                                    student.creditsEarned >= PROGRESS_THRESHOLD ? 'בדרך' : 
-                                    student.creditsEarned > 0 ? 'רחוק מהסף' : 'אין קופונים'
-                }));
-
-                const wb = XLSX.utils.book_new();
-                const ws = XLSX.utils.json_to_sheet(exportData);
-                XLSX.utils.book_append_sheet(wb, ws, 'סטודנטים נבחרים');
-
-                const fileName = `נבחרים_${new Date().toISOString().split('T')[0]}.xlsx`;
-                XLSX.writeFile(wb, fileName);
-
-                showAlert(`✅ ייצוא הושלם: ${selectedStudents.length} סטודנטים נבחרים`, 'success');
-                clearSelection();
-                
-            } catch (error) {
-                showAlert('שגיאה בייצוא: ' + error.message, 'error');
-            }
-        }
-
-        function changeSelectedStatus() {
-            const checkboxes = document.querySelectorAll('.checkbox-student:checked');
-            const selectedIds = Array.from(checkboxes).map(cb => cb.value);
-            
-            if (selectedIds.length === 0) {
-                showAlert('לא נבחרו סטודנטים', 'warning');
-                return;
-            }
-
-            const action = confirm('בחר פעולה:\nOK = סמן כטופלו\nCancel = בטל טיפול');
-            
-            if (action) {
-                selectedIds.forEach(studentId => handledStudents.add(studentId));
-                showAlert(`✅ ${selectedIds.length} סטודנטים סומנו כטופלו`, 'success');
-            } else {
-                selectedIds.forEach(studentId => handledStudents.delete(studentId));
-                showAlert(`↩️ הטיפול ב-${selectedIds.length} סטודנטים בוטל`, 'info');
-            }
-            
-            markUnsavedChanges();
-            applySorting();
-        }
-
-        function sendEmailToSelected() {
-            const checkboxes = document.querySelectorAll('.checkbox-student:checked');
-            const selectedIds = Array.from(checkboxes).map(cb => cb.value);
-            
-            if (selectedIds.length === 0) {
-                showAlert('לא נבחרו סטודנטים', 'warning');
-                return;
-            }
-
-            const selectedStudents = currentDisplayedStudents.filter(student => 
-                selectedIds.includes(student.id)
-            );
-
-            const emails = selectedStudents
-                .filter(s => s.email)
-                .map(s => s.email)
-                .join(';');
-
-            if (emails) {
-                const subject = encodeURIComponent('הודעה מהמערכת האקדמית');
-                const body = encodeURIComponent('שלום,\n\nאנחנו יוצרים עמכם קשר בנוגע לקורס.\n\nבברכה,\nהצוות האקדמי');
-                
-                window.open(`mailto:${emails}?subject=${subject}&body=${body}`);
-                showAlert(`📧 נפתח אימייל עם ${emails.split(';').length} כתובות`, 'success');
-            } else {
-                showAlert('אין כתובות אימייל זמינות לסטודנטים הנבחרים', 'warning');
-            }
-        }
-
-        function printSelectedList() {
-            const checkboxes = document.querySelectorAll('.checkbox-student:checked');
-            const selectedIds = Array.from(checkboxes).map(cb => cb.value);
-            
-            if (selectedIds.length === 0) {
-                showAlert('לא נבחרו סטודנטים', 'warning');
-                return;
-            }
-
-            const selectedStudents = currentDisplayedStudents.filter(student => 
-                selectedIds.includes(student.id)
-            );
-
-            let printContent = `
-                <html>
-                <head>
-                    <title>רשימת סטודנטים נבחרים</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; direction: rtl; }
-                        table { border-collapse: collapse; width: 100%; }
-                        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-                        th { background-color: #f2f2f2; }
-                        .header { text-align: center; margin-bottom: 20px; }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <h2>רשימת סטודנטים נבחרים</h2>
-                        <p>תאריך: ${new Date().toLocaleDateString('he-IL')}</p>
-                    </div>
-                    <table>
-                        <tr>
-                            <th>מס'</th>
-                            <th>שם מלא</th>
-                            <th>תעודת זהות</th>
-                            <th>אימייל</th>
-                            <th>קופונים</th>
-                            <th>סטטוס</th>
-                        </tr>
-            `;
-
-            selectedStudents.forEach((student, index) => {
-                const status = handledStudents.has(student.id) ? 'טופל' : 
-                              student.finalGrade === 'עבר' ? 'עבר' : 'ממתין';
-                
-                printContent += `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td>${student.name}</td>
-                        <td>${student.id}</td>
-                        <td>${student.email || 'לא זמין'}</td>
-                        <td>${student.creditsEarned}</td>
-                        <td>${status}</td>
-                    </tr>
-                `;
             });
 
-            printContent += `
-                    </table>
-                </body>
-                </html>
-            `;
-
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(printContent);
-            printWindow.document.close();
-            printWindow.print();
-            
-            showAlert(`🖨️ רשימה עם ${selectedStudents.length} סטודנטים נשלחה להדפסה`, 'success');
+            renderTable(filtered);
         }
 
-        function selectAllVisible() {
-            const checkboxes = document.querySelectorAll('.checkbox-student');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = true;
-            });
-            document.getElementById('selectAll').checked = true;
-            updateSelectedCount();
-        }
-
-        function applySorting() {
-            const sortValue = document.getElementById('sortSelect').value;
-            
-            if (currentDisplayedStudents.length === 0) return;
-            
-            let sortedData = [...currentDisplayedStudents];
-            
-            switch(sortValue) {
-                case 'credits-desc':
-                    sortedData.sort((a, b) => b.creditsEarned - a.creditsEarned);
-                    break;
-                case 'credits-asc':
-                    sortedData.sort((a, b) => a.creditsEarned - b.creditsEarned);
-                    break;
-                case 'first-name':
-                    sortedData.sort((a, b) => {
-                        const aFirst = a.firstName || a.name.split(' ')[0] || '';
-                        const bFirst = b.firstName || b.name.split(' ')[0] || '';
-                        return aFirst.localeCompare(bFirst, 'he');
-                    });
-                    break;
-                case 'last-name':
-                    sortedData.sort((a, b) => {
-                        const aLast = a.lastName || a.name.split(' ').slice(-1)[0] || '';
-                        const bLast = b.lastName || b.name.split(' ').slice(-1)[0] || '';
-                        return aLast.localeCompare(bLast, 'he');
-                    });
-                    break;
-                case 'full-name':
-                    sortedData.sort((a, b) => a.name.localeCompare(b.name, 'he'));
-                    break;
-                case 'status':
-                    sortedData.sort((a, b) => {
-                        const aStatus = handledStudents.has(a.id) ? 'טופל' : 
-                                       a.finalGrade === 'עבר' ? 'עבר' : 'ממתין';
-                        const bStatus = handledStudents.has(b.id) ? 'טופל' : 
-                                       b.finalGrade === 'עבר' ? 'עבר' : 'ממתין';
-                        return aStatus.localeCompare(bStatus, 'he');
-                    });
-                    break;
-            }
-            
-            displayStudentsInternalWithHighlight(sortedData, currentCategoryName, currentSearchTerm);
-        }
-
-        function updateSelectedCount() {
-            const checkboxes = document.querySelectorAll('.checkbox-student:checked');
-            const count = checkboxes.length;
-            document.getElementById('selectedCount').textContent = `${count} נבחרו`;
-            
-            const bulkActions = document.getElementById('bulkActions');
-            if (count > 0) {
-                bulkActions.classList.add('show');
-            } else {
-                bulkActions.classList.remove('show');
-            }
-        }
-
-        function toggleSelectAll() {
-            const selectAll = document.getElementById('selectAll');
-            const checkboxes = document.querySelectorAll('.checkbox-student');
-            
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = selectAll.checked;
-            });
-            
-            updateSelectedCount();
-        }
-
-        function clearSelection() {
-            const checkboxes = document.querySelectorAll('.checkbox-student');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = false;
-            });
-            document.getElementById('selectAll').checked = false;
-            updateSelectedCount();
-        }
-
-        function exportCurrentCategory() {
-            if (currentDisplayedStudents.length === 0) {
-                showAlert('אין נתונים לייצוא', 'warning');
-                return;
-            }
-
-            try {
-                const exportData = currentDisplayedStudents.map((student, index) => ({
-                    'מס רץ': index + 1,
-                    'שם מלא': student.name,
-                    'תעודת זהות': student.id,
-                    'אימייל': student.email || 'לא זמין',
-                    'קופונים': student.creditsEarned,
-                    'סטטוס ציון': student.finalGrade,
-                    'טופל': handledStudents.has(student.id) ? 'כן' : 'לא',
-                    'רמת דחיפות': student.creditsEarned >= URGENT_THRESHOLD ? 'דחוף מאוד' : 
-                                    student.creditsEarned >= WARNING_THRESHOLD ? 'קרוב לסף' : 
-                                    student.creditsEarned >= PROGRESS_THRESHOLD ? 'בדרך' : 
-                                    student.creditsEarned > 0 ? 'רחוק מהסף' : 'אין קופונים'
-                }));
-
-                const wb = XLSX.utils.book_new();
-                const ws = XLSX.utils.json_to_sheet(exportData);
-                XLSX.utils.book_append_sheet(wb, ws, currentCategoryName);
-
-                const fileName = `${currentCategoryName}_${new Date().toISOString().split('T')[0]}.xlsx`;
-                XLSX.writeFile(wb, fileName);
-
-                showAlert(`✅ ייצוא "${currentCategoryName}" הושלם (${exportData.length} סטודנטים)`, 'success');
-            } catch (error) {
-                showAlert('שגיאה בייצוא: ' + error.message, 'error');
-            }
-        }
-
-        function showUrgentOnly() {
-            const urgentStudents = allStudentsData.filter(s => 
-                s.finalGrade !== 'עבר' && 
-                s.creditsEarned >= URGENT_THRESHOLD && 
-                !handledStudents.has(s.id)
-            );
-            displayStudents(urgentStudents, 'דחוף מאוד (30+ קופונים - לא טופלו)');
-        }
-
-        function showNeedGrading() {
-            const thresholdStudents = allStudentsData.filter(s => 
-                s.finalGrade !== 'עבר' && 
-                s.creditsEarned >= WARNING_THRESHOLD && 
-                !handledStudents.has(s.id)
-            );
-            displayStudents(thresholdStudents, 'מגיעים לסף (24+ קופונים - לא טופלו)');
-        }
-
-        function showProgress() {
-            const progressStudents = allStudentsData.filter(s => 
-                s.finalGrade !== 'עבר' && 
-                s.creditsEarned >= PROGRESS_THRESHOLD && 
-                s.creditsEarned < WARNING_THRESHOLD && 
-                !handledStudents.has(s.id)
-            );
-            displayStudents(progressStudents, 'בדרך לסף (15-23 קופונים - לא טופלו)');
-        }
-
-        function showFarFromThreshold() {
-            const farStudents = allStudentsData.filter(s => 
-                s.finalGrade !== 'עבר' && 
-                s.creditsEarned > 0 && 
-                s.creditsEarned < PROGRESS_THRESHOLD && 
-                !handledStudents.has(s.id)
-            );
-            displayStudents(farStudents, 'רחוקים מהסף (פחות מ-15 קופונים - לא טופלו)');
-        }
-
-        function showHandledStudents() {
-            const handledStudentsList = allStudentsData.filter(s => 
-                handledStudents.has(s.id)
-            );
-            displayStudents(handledStudentsList, 'סטודנטים שטופלו');
-            
-            if (handledStudentsList.length === 0) {
-                showAlert('לא סומנו סטודנטים כטופלו עדיין', 'info');
-            }
-        }
-
-        function showAllStudents() {
-            displayStudents(allStudentsData, 'כל הסטודנטים');
-        }
-
-        function downloadExcel() {
-            if (!xlsxLibraryLoaded) {
-                showAlert('ספריית האקסל עדיין לא נטענה. אנא נסה שוב בעוד רגע.', 'warning');
-                return;
-            }
-
-            if (allStudentsData.length === 0) {
-                showAlert('אין נתונים להורדה. אנא העלה קבצים תחילה.', 'warning');
-                return;
-            }
-
-            try {
-                console.log('מתחיל ליצור קובץ אקסל...');
-                showAlert('מכין קובץ אקסל...', 'info');
-
-                const wb = XLSX.utils.book_new();
-
-                // גיליון כל הסטודנטים
-                const allStudentsSheet = allStudentsData.map((student, index) => ({
-                    'מס רץ': index + 1,
-                    'שם מלא': student.name,
-                    'תעודת זהות': student.id,
-                    'אימייל': student.email || 'לא זמין',
-                    'שם פרטי': student.firstName || '',
-                    'שם משפחה': student.lastName || '',
-                    'ציון סופי': student.finalGrade,
-                    'קופונים': student.creditsEarned,
-                    'טופל': handledStudents.has(student.id) ? 'כן' : 'לא',
-                    'רמת דחיפות': student.creditsEarned >= URGENT_THRESHOLD ? 'דחוף מאוד' : 
-                                    student.creditsEarned >= WARNING_THRESHOLD ? 'קרוב לסף' : 
-                                    student.creditsEarned >= PROGRESS_THRESHOLD ? 'בדרך' : 
-                                    student.creditsEarned > 0 ? 'רחוק מהסף' : 'אין קופונים'
-                }));
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(allStudentsSheet), "כל הסטודנטים");
-
-                // גיליון דחופים (לא טופלו)
-                const urgentStudents = allStudentsData
-                    .filter(s => s.finalGrade !== 'עבר' && s.creditsEarned >= URGENT_THRESHOLD && !handledStudents.has(s.id))
-                    .sort((a, b) => b.creditsEarned - a.creditsEarned)
-                    .map((student, index) => ({
-                        'עדיפות': index + 1,
-                        'שם מלא': student.name,
-                        'תעודת זהות': student.id,
-                        'אימייל': student.email || 'לא זמין',
-                        'קופונים': student.creditsEarned,
-                        'הערות': 'צריך ציון מיידי - הגיע לסף!'
-                    }));
-
-                if (urgentStudents.length > 0) {
-                    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(urgentStudents), "דחוף מאוד");
-                }
-
-                // גיליון מטופלים
-                const handledStudentsList = allStudentsData
-                    .filter(s => handledStudents.has(s.id))
-                    .map((student, index) => ({
-                        'מס': index + 1,
-                        'שם מלא': student.name,
-                        'תעודת זהות': student.id,
-                        'אימייל': student.email || 'לא זמין',
-                        'קופונים': student.creditsEarned,
-                        'רמת דחיפות מקורית': student.creditsEarned >= URGENT_THRESHOLD ? 'דחוף מאוד' : 
-                                               student.creditsEarned >= WARNING_THRESHOLD ? 'קרוב לסף' : 
-                                               student.creditsEarned >= PROGRESS_THRESHOLD ? 'בדרך' : 'רחוק מהסף'
-                    }));
-
-                if (handledStudentsList.length > 0) {
-                    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(handledStudentsList), "מטופלים");
-                }
-
-                // גיליון סטטיסטיקות
-                const passedCount = allStudentsData.filter(s => s.finalGrade === 'עבר').length;
-                const urgentCount = allStudentsData.filter(s => s.finalGrade !== 'עבר' && s.creditsEarned >= URGENT_THRESHOLD && !handledStudents.has(s.id)).length;
-                const handledCount = handledStudents.size;
-
-                const statsSheet = [
-                    { 'קטגוריה': 'סה"כ סטודנטים', 'מספר': allStudentsData.length, 'אחוז': '100.0%' },
-                    { 'קטגוריה': 'עברו', 'מספר': passedCount, 'אחוז': `${(passedCount/allStudentsData.length*100).toFixed(1)}%` },
-                    { 'קטגוריה': 'דחוף מאוד (לא טופלו)', 'מספר': urgentCount, 'אחוז': `${(urgentCount/allStudentsData.length*100).toFixed(1)}%` },
-                    { 'קטגוריה': 'טופלו', 'מספר': handledCount, 'אחוז': `${(handledCount/allStudentsData.length*100).toFixed(1)}%` }
-                ];
-
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(statsSheet), "סטטיסטיקות");
-
-                const fileName = `דוח_סטודנטים_${new Date().toISOString().split('T')[0]}.xlsx`;
-                XLSX.writeFile(wb, fileName);
-                
-                showAlert(`✅ קובץ האקסל נוצר בהצלחה: ${fileName}`, 'success');
-
-            } catch (error) {
-                console.error('שגיאה ביצירת קובץ האקסל:', error);
-                showAlert('שגיאה ביצירת קובץ האקסל: ' + error.message, 'error');
-            }
-        }
-
-        function debugData() {
-            if (allStudentsData.length === 0) {
-                showAlert('אין נתונים לדיבוג. העלה קבצים תחילה.', 'warning');
-                return;
-            }
-
-            console.log('=== דוח דיבוג מפורט ===');
-            
-            const totalStudents = allStudentsData.length;
-            const urgentCount = allStudentsData.filter(s => s.finalGrade !== 'עבר' && s.creditsEarned >= URGENT_THRESHOLD).length;
-            const urgentNotHandled = allStudentsData.filter(s => s.finalGrade !== 'עבר' && s.creditsEarned >= URGENT_THRESHOLD && !handledStudents.has(s.id)).length;
-            
-            let debugMessage = `📊 דוח דיבוג:\n\n`;
-            debugMessage += `סה"כ סטודנטים: ${totalStudents}\n`;
-            debugMessage += `דחופים (30+ קופונים): ${urgentCount}\n`;
-            debugMessage += `דחופים שלא טופלו: ${urgentNotHandled}\n`;
-            debugMessage += `טופלו: ${handledStudents.size}\n\n`;
-            
-            if (urgentNotHandled === 0 && urgentCount > 0) {
-                debugMessage += `✅ כל הדחופים טופלו!\n`;
-            } else if (urgentNotHandled > 0) {
-                debugMessage += `⚠️ עדיין יש ${urgentNotHandled} דחופים שצריכים טיפול\n`;
-            }
-            
-            showAlert(debugMessage, 'info');
-        }
-
-        function clearData() {
-            if (confirm('האם אתה בטוח שברצונך למחוק את כל הנתונים?')) {
-                try {
-                    allStudentsData = [];
-                    studentsFileLoaded = false;
-                    couponsFileLoaded = false;
-                    rawStudentsData = [];
-                    rawCouponsData = [];
-                    handledStudents = new Set();
-                    currentDisplayedStudents = [];
-                    currentCategoryName = '';
-                    currentSearchTerm = '';
-                    originalDataBeforeSearch = [];
-                    hasUnsavedChanges = false;
-                    
-                    document.getElementById('resultsSection').style.display = 'none';
-                    document.getElementById('tableContainer').classList.add('hidden');
-                    document.getElementById('bulkActions').classList.remove('show');
-                    document.getElementById('unsavedChanges').style.display = 'none';
-                    
-                    if (typeof(Storage) !== "undefined") {
-                        localStorage.removeItem('studentManagementData');
-                    }
-                    
-                    showAlert('כל הנתונים נמחקו', 'info');
-                } catch (error) {
-                    showAlert('שגיאה במחיקת נתונים: ' + error.message, 'error');
-                }
-            }
-        }
-
-        // טעינת הספריות בעת טעינת הדף
-        window.addEventListener('load', function() {
-            console.log('הדף נטען - מתחיל את המערכת');
-            try {
-                loadXLSXLibrary();
-            } catch (error) {
-                console.error('שגיאה בטעינת המערכת:', error);
-                updateLibraryStatus('❌ שגיאה קריטית. אנא רענן את הדף.', 'error');
+        // Add event listener for search input
+        document.getElementById('searchInput').addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                applyFilters();
             }
         });
-
-        // קיצורי דרך למקלדת
-        document.addEventListener('keydown', function(event) {
-            // Ctrl+F או F3 לפתיחת החיפוש
-            if ((event.ctrlKey && event.key === 'f') || event.key === 'F3') {
-                event.preventDefault();
-                const searchInput = document.getElementById('searchInput');
-                searchInput.focus();
-                searchInput.select();
-            }
-            
-            // Escape לניקוי החיפוש
-            if (event.key === 'Escape' && currentSearchTerm) {
-                clearSearch();
-            }
-
-            // Ctrl+S לשמירה
-            if (event.ctrlKey && event.key === 's') {
-                event.preventDefault();
-                if (hasUnsavedChanges) {
-                    saveChanges();
-                }
-            }
-        });
-
-        // טיפול בשגיאות גלובליות
-        window.addEventListener('error', function(event) {
-            console.error('שגיאה גלובלית:', event.error);
-            showAlert('שגיאה במערכת: ' + event.error.message, 'error');
-        });
-
-        console.log('סקריפט נטען בהצלחה');
     </script>
 </body>
 </html>
